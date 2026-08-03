@@ -11,32 +11,22 @@ const initialState = {
     inventory: [],
     history: [],
     turn: 0,
-}
-
-export function useGameState() {
-    const [gameState, setGameState, resetGameState] = useLocalStorage('lore-engine-save', initialState)
-
-    const updateState = (updates) => {
-        setGameState(prev => ({ ...prev, ...updates }))
     }
 
-    const startNewGame = (setting, character) => {
-        setGameState({
-        ...initialState,
-        screen: 'charCreate',
-        setting: setting.id,
-        character,
-        currency: 50 + (character?.attrs?.cha ?? 0) * 5,
-        location: 'Startpunkt',
-        })
+    export function useGameState() {
+    const [gameState, setGameState, resetGameState] = useLocalStorage('lore-engine-save', initialState)
+
+    const safeState = (gameState && typeof gameState === 'object') ? gameState : initialState
+
+    const updateState = (updates) => {
+        setGameState({ ...safeState, ...updates })
     }
 
     const goToScreen = (screen) => updateState({ screen })
 
     return {
-        gameState,
+        gameState: safeState,
         updateState,
-        startNewGame,
         resetGameState,
         goToScreen,
     }

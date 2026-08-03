@@ -14,28 +14,21 @@ export function Story({ gameState, onUpdateState, onBack }) {
         loadStory()
     }, [])
 
-    const buildMessages = (playerChoice) => {
-        const messages = [...(gameState.history || [])]
-        if (playerChoice) messages.push({ role: 'user', content: playerChoice })
-        else messages.push({ role: 'user', content: 'Starte das Abenteuer!' })
-        return messages
-    }
+const loadStory = async (playerChoice) => {
+    setLoading(true)
+    setError(false)
+    setChoices([])
 
-    const loadStory = async (playerChoice) => {
-        setLoading(true)
-        setError(false)
-        setChoices([])
+    const systemPrompt = `${setting.systemPrompt}
 
-        const systemPrompt = `${setting.systemPrompt}
+Spieler-Charakter:
+- Name: ${character.name}
+- Klasse: ${character.class.label}
+- Stärke: ${character.attrs.str}, Agilität: ${character.attrs.agi}, Intelligenz: ${character.attrs.int}
+- Ausdauer: ${character.attrs.end}, Glück: ${character.attrs.lck}, Charisma: ${character.attrs.cha}
 
-    Spieler-Charakter:
-    - Name: ${character.name}
-    - Klasse: ${character.class.label}
-    - Stärke: ${character.attrs.str}, Agilität: ${character.attrs.agi}, Intelligenz: ${character.attrs.int}
-    - Ausdauer: ${character.attrs.end}, Glück: ${character.attrs.lck}, Charisma: ${character.attrs.cha}
-
-    Antworte NUR mit validem JSON (kein Markdown, kein Text davor/dahinter):
-    {
+Antworte NUR mit validem JSON (kein Markdown, kein Text davor/dahinter):
+{
     "scene": "Atmosphärische Szenen-Beschreibung (2-3 Sätze)",
     "location": "Ortsname (max 20 Zeichen)",
     "choices": [
@@ -45,37 +38,32 @@ export function Story({ gameState, onUpdateState, onBack }) {
     ]
     }`
 
+        const userMessage = playerChoice || 'Starte das Abenteuer!'
+
         try {
-        const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+            {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 1000,
-            system: systemPrompt,
-            messages: buildMessages(playerChoice),
+                system_instruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ role: 'user', parts: [{ text: userMessage }] }],
             }),
-        })
+            }
+        )
 
         const data = await resp.json()
-        const raw = data.content.map(b => b.type === 'text' ? b.text : '').join('')
+        console.log('API Response:', data)
+        const raw = data.candidates[0].content.parts[0].text
         const clean = raw.replace(/```json|```/g, '').trim()
         const parsed = JSON.parse(clean)
 
-        const newHistory = [
-            ...(gameState.history || []),
-            { role: 'user', content: playerChoice || 'Starte das Abenteuer!' },
-            { role: 'assistant', content: raw },
-        ].slice(-10)
-
-        onUpdateState({
-            location: parsed.location || gameState.location,
-            history: newHistory,
-        })
-
+        onUpdateState({ location: parsed.location || gameState.location })
         setStoryText(parsed.scene)
         setChoices(parsed.choices)
         } catch (e) {
+        console.error('Error:', e)
         setError(true)
         } finally {
         setLoading(false)

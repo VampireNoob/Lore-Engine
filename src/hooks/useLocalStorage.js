@@ -4,7 +4,8 @@ export function useLocalStorage(key, initialValue) {
     const [storedValue, setStoredValue] = useState(() => {
         try {
         const item = localStorage.getItem(key)
-        return item ? JSON.parse(item) : initialValue
+        if (item === null || item === 'undefined') return initialValue
+        return JSON.parse(item)
         } catch (error) {
         console.error('localStorage read error:', error)
         return initialValue
@@ -13,6 +14,7 @@ export function useLocalStorage(key, initialValue) {
 
     const setValue = (value) => {
         try {
+        if (value === undefined) return
         setStoredValue(value)
         localStorage.setItem(key, JSON.stringify(value))
         } catch (error) {
