@@ -195,19 +195,26 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
             style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
             {diceResult ? (
                 <>
-                <div className={`text-7xl font-black transition-all duration-100 ${rolling ? 'scale-110 opacity-60' : 'scale-100 opacity-100'}`}
-                    style={{ color: rolling ? '#555' : setting.colors.primary, fontFamily: 'monospace' }}>
-                    {diceResult}
-                </div>
-                <div className="text-xs tracking-widest mt-2" style={{ color: '#555' }}>
+                    <svg width="80" height="80" viewBox="0 0 80 80" className={`transition-all duration-100 ${rolling ? 'animate-spin opacity-60' : 'opacity-100'}`}>
+                    <rect x="5" y="5" width="70" height="70" rx="12" ry="12"
+                        fill={setting.colors.surface}
+                        stroke={rolling ? '#555' : setting.colors.primary}
+                        strokeWidth="2" />
+                    <text x="40" y="52" textAnchor="middle"
+                        fontSize="32" fontWeight="900" fontFamily="monospace"
+                        fill={rolling ? '#555' : setting.colors.primary}>
+                        {diceResult}
+                    </text>
+                    </svg>
+                    <div className="text-xs tracking-widest mt-2" style={{ color: '#555' }}>
                     {rolling ? 'WÜRFELT...' : `D${diceType}`}
-                </div>
+                    </div>
                 </>
-            ) : (
+                ) : (
                 <div className="text-xs tracking-widest" style={{ color: '#333' }}>
-                WÄHLE EINE AKTION
+                    WÄHLE EINE AKTION
                 </div>
-            )}
+                )}
             </div>
 
             {/* Combat Log */}
