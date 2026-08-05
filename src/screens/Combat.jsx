@@ -195,19 +195,35 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
             style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
             {diceResult ? (
                 <>
-                    <svg width="80" height="80" viewBox="0 0 80 80" className={`transition-all duration-100 ${rolling ? 'animate-spin opacity-60' : 'opacity-100'}`}>
+                    <svg width="80" height="80" viewBox="0 0 80 80"
+                    className={`transition-all duration-100 ${rolling ? 'animate-spin opacity-60' : 'opacity-100'}`}>
                     <rect x="5" y="5" width="70" height="70" rx="12" ry="12"
                         fill={setting.colors.surface}
                         stroke={rolling ? '#555' : setting.colors.primary}
                         strokeWidth="2" />
-                    <text x="40" y="52" textAnchor="middle"
-                        fontSize="32" fontWeight="900" fontFamily="monospace"
+                    {/* Würfel-Punkte basierend auf diceResult (nur für D6) */}
+                    {diceType === 6 && (
+                        <>
+                        {[1,3,5].includes(diceResult) && <circle cx="40" cy="40" r="5" fill={rolling ? '#555' : setting.colors.primary} />}
+                        {[2,3,4,5,6].includes(diceResult) && <circle cx="22" cy="22" r="5" fill={rolling ? '#555' : setting.colors.primary} />}
+                        {[2,3,4,5,6].includes(diceResult) && <circle cx="58" cy="58" r="5" fill={rolling ? '#555' : setting.colors.primary} />}
+                        {[4,5,6].includes(diceResult) && <circle cx="58" cy="22" r="5" fill={rolling ? '#555' : setting.colors.primary} />}
+                        {[4,5,6].includes(diceResult) && <circle cx="22" cy="58" r="5" fill={rolling ? '#555' : setting.colors.primary} />}
+                        {[6].includes(diceResult) && <circle cx="22" cy="40" r="5" fill={rolling ? '#555' : setting.colors.primary} />}
+                        {[6].includes(diceResult) && <circle cx="58" cy="40" r="5" fill={rolling ? '#555' : setting.colors.primary} />}
+                        </>
+                    )}
+                    {/* Für D20 zeigen wir die Zahl */}
+                    {diceType === 20 && (
+                        <text x="40" y="52" textAnchor="middle"
+                        fontSize="28" fontWeight="900" fontFamily="monospace"
                         fill={rolling ? '#555' : setting.colors.primary}>
                         {diceResult}
-                    </text>
+                        </text>
+                    )}
                     </svg>
                     <div className="text-xs tracking-widest mt-2" style={{ color: '#555' }}>
-                    {rolling ? 'WÜRFELT...' : `D${diceType}`}
+                    {rolling ? 'WÜRFELT...' : `D${diceType} — ${diceResult}`}
                     </div>
                 </>
                 ) : (

@@ -70,6 +70,12 @@ Ansonsten setze combat auf null.
             )
 
             const data = await resp.json()
+
+            if (data.error?.code === 429 || data.error?.code === 503) {
+                setTimeout(() => loadStory(playerChoice), 10000)
+                return
+            }
+
             const raw = data.candidates[0].content.parts[0].text
             const clean = raw.replace(/```json|```/g, '').trim()
             const parsed = JSON.parse(clean)
