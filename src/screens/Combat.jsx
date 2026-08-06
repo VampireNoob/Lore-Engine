@@ -1,3 +1,4 @@
+import { rollWithAdvantage, rollNormal, hasAdvantage } from '../hooks/useCombat'
 import { useState, useEffect } from 'react'
 import { getSettingById } from '../settings'
 
@@ -22,30 +23,41 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
         setLog(prev => [{ text, type }, ...prev].slice(0, 8))
     }
 
-    const animateDie = (sides, callback) => {
+    const animateDie = (sides, action, callback) => {
         setRolling(true)
         setDiceType(sides)
+        const classId = character.class.id
+        const advantage = hasAdvantage(classId, action)
+
         let ticks = 0
         const interval = setInterval(() => {
-        setDiceResult(Math.floor(Math.random() * sides) + 1)
-        ticks++
-        if (ticks >= 10) {
+            setDiceResult(Math.floor(Math.random() * sides) + 1)
+            ticks++
+            if (ticks >= 10) {
             clearInterval(interval)
-            const final = rollDie(sides)
-            setDiceResult(final)
+            const { result, rolls } = advantage
+                ? rollWithAdvantage(sides)
+                : rollNormal(sides)
+
+            setDiceResult(result)
             setRolling(false)
-            callback(final)
-        }
+
+            if (advantage) {
+                addLog(`✨ Advantage! Würfe: [${rolls.join(', ')}] → ${result}`, 'info')
+            }
+
+            callback(result)
+            }
         }, 80)
-    }
+        }
 
     const handleAttack = () => {
         if (phase !== 'player' || rolling) return
         setPhase('animating')
 
-        animateDie(20, (atkRoll) => {
+        animateDie(20, 'attack', (atkRoll) => {
         setTimeout(() => {
-            animateDie(6, (dmgRoll) => {
+            animateDie(6, 'attack', (dmgRoll) => {
             const strBonus = Math.floor(gameState.character.attrs.str / 2)
             const isCrit = atkRoll >= 19
             const isHit = atkRoll >= 6
@@ -80,6 +92,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
     const handleDodge = () => {
         if (phase !== 'player' || rolling) return
         setDodging(true)
+        const advantage = hasAdvantage(character.class.id, 'dodge')
         addLog('🛡️ Du bereitest eine Ausweichbewegung vor...', 'info')
         setPhase('animating')
         setTimeout(() => enemyTurn(enemyHp, true), 600)
@@ -88,61 +101,63 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
     const handleFlee = () => {
         if (phase !== 'player' || rolling) return
         setPhase('animating')
-        animateDie(6, (roll) => {
-        const agiBonus = gameState.character.attrs.agi
-        if (roll + agiBonus >= 7) {
-            addLog('🏃 Entkommen! Du flüchtest ins Dunkel.', 'info')
-            setPhase('end')
-            setTimeout(() => onDefeat('flee'), 1200)
-        } else {
-            addLog('❌ Flucht fehlgeschlagen!', 'miss')
-            setTimeout(() => enemyTurn(enemyHp), 600)
-        }
+        animateDie(6, 'flee', (roll) => {
+            const agiBonus = gameState.character.attrs.agi
+            const bonus = hasAdvantage(character.class.id, 'flee') ? 2 : 0
+            if (roll + agiBonus + bonus >= 7) {
+                addLog('🏃 Entkommen! Du flüchtest ins Dunkel.', 'info')
+                setPhase('end')
+                setTimeout(() => onDefeat('flee'), 1200)
+            } else {
+                addLog('❌ Flucht fehlgeschlagen!', 'miss')
+                setTimeout(() => enemyTurn(enemyHp), 600)
+            }
         })
     }
 
     const enemyTurn = (currentEnemyHp, isDodging = false) => {
         setPhase('enemy')
         setTimeout(() => {
-        animateDie(20, (atkRoll) => {
-            setTimeout(() => {
-            animateDie(6, (dmgRoll) => {
-                const isHit = atkRoll >= 7
-                let dmg = 0
+            animateDie(20, 'attack', (atkRoll) => {
+                setTimeout(() => {
+                    animateDie(6, 'attack', (dmgRoll) => {
+                        const isHit = atkRoll >= 7
+                        let dmg = 0
 
-                if (isDodging) {
-                animateDie(6, (dodgeRoll) => {
-                    const agiBonus = gameState.character.attrs.agi
-                    if (dodgeRoll + agiBonus >= 6) {
-                    addLog('✨ Ausgewichen! Kein Schaden!', 'info')
-                    setDodging(false)
-                    setPhase('player')
-                    return
-                    }
-                })
-                }
+                        if (isDodging) {
+                            const { result: dodgeRoll } = hasAdvantage(character.class.id, 'dodge')
+                                ? rollWithAdvantage(6)
+                                : rollNormal(6)
+                            const agiBonus = gameState.character.attrs.agi
+                            if (dodgeRoll + agiBonus >= 6) {
+                                addLog('✨ Ausgewichen! Kein Schaden!', 'info')
+                                setDodging(false)
+                                setPhase('player')
+                                return
+                            }
+                        }
 
-                if (isHit && !isDodging) {
-                dmg = Math.max(1, dmgRoll - 1)
-                const newPlayerHp = Math.max(0, playerHp - dmg)
-                setPlayerHp(newPlayerHp)
-                addLog(`👹 ${combatEnemy.name} trifft dich für ${dmg} Schaden!`, 'enemy')
+                        if (isHit && !isDodging) {
+                            dmg = Math.max(1, dmgRoll - 1)
+                            const newPlayerHp = Math.max(0, playerHp - dmg)
+                            setPlayerHp(newPlayerHp)
+                            addLog(`👹 ${combatEnemy.name} trifft dich für ${dmg} Schaden!`, 'enemy')
 
-                if (newPlayerHp <= 0) {
-                    addLog('💀 Du wurdest besiegt...', 'miss')
-                    setPhase('end')
-                    setTimeout(() => onDefeat('death'), 1500)
-                    return
-                }
-                } else if (!isDodging) {
-                addLog(`💨 ${combatEnemy.name} verfehlt!`, 'info')
-                }
+                            if (newPlayerHp <= 0) {
+                                addLog('💀 Du wurdest besiegt...', 'miss')
+                                setPhase('end')
+                                setTimeout(() => onDefeat('death'), 1500)
+                                return
+                            }
+                        } else if (!isDodging) {
+                            addLog(`💨 ${combatEnemy.name} verfehlt!`, 'info')
+                        }
 
-                setDodging(false)
-                setPhase('player')
+                        setDodging(false)
+                        setPhase('player')
+                    })
+                }, 400)
             })
-            }, 400)
-        })
         }, 400)
     }
 

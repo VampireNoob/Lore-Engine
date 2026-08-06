@@ -33,6 +33,9 @@ Spieler-Charakter:
 - Klasse: ${character.class.label}
 - Stärke: ${character.attrs.str}, Agilität: ${character.attrs.agi}, Intelligenz: ${character.attrs.int}
 - Ausdauer: ${character.attrs.end}, Glück: ${character.attrs.lck}, Charisma: ${character.attrs.cha}
+- Aktueller Standort: ${gameState.location || 'Unbekannt'}
+
+Bleib geografisch konsistent — wenn die Story in einer Stadt oder Region beginnt, bleib dort und den umliegenden Gebieten. Springe nicht zwischen verschiedenen Städten hin und her.
 
 Antworte NUR mit validem JSON (kein Markdown, kein Text davor/dahinter).
 Wenn eine Wahl zu Kampf führt, setze type auf "combat" und combat auf {"name": "Gegner-Name", "hp": 15}.
