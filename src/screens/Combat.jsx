@@ -7,6 +7,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
     const { character, combatEnemy } = gameState
 
     const [playerHp, setPlayerHp] = useState(gameState.hp)
+    const [playerShield, setPlayerShield] = useState(gameState.shield || 0)
     const [enemyHp, setEnemyHp] = useState(combatEnemy?.hp || 20)
     const [enemyMaxHp] = useState(combatEnemy?.hp || 20)
     const [playerMaxHp] = useState(gameState.maxHp || 20)
@@ -79,6 +80,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
             if (newEnemyHp <= 0) {
                 addLog(`🏆 ${combatEnemy.name} wurde besiegt!`, 'victory')
                 setPhase('end')
+                onUpdateState({ hp: playerHp, shield: playerShield })
                 setTimeout(() => onVictory(combatEnemy), 1500)
                 return
             }
@@ -139,15 +141,26 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
 
                         if (isHit && !isDodging) {
                             dmg = Math.max(1, dmgRoll - 1)
-                            const newPlayerHp = Math.max(0, playerHp - dmg)
-                            setPlayerHp(newPlayerHp)
-                            addLog(`👹 ${combatEnemy.name} trifft dich für ${dmg} Schaden!`, 'enemy')
+                            let remainingDmg = dmg
 
-                            if (newPlayerHp <= 0) {
-                                addLog('💀 Du wurdest besiegt...', 'miss')
-                                setPhase('end')
-                                setTimeout(() => onDefeat('death'), 1500)
-                                return
+                            if (playerShield > 0) {
+                                const shieldAbsorb = Math.min(playerShield, remainingDmg)
+                                setPlayerShield(prev => prev - shieldAbsorb)
+                                remainingDmg -= shieldAbsorb
+                                addLog(`🛡️ Schild absorbiert ${shieldAbsorb} Schaden!`, 'info')
+                            }
+
+                            if (remainingDmg > 0) {
+                                const newPlayerHp = Math.max(0, playerHp - remainingDmg)
+                                setPlayerHp(newPlayerHp)
+                                addLog(`👹 ${combatEnemy.name} trifft dich für ${remainingDmg} Schaden!`, 'enemy')
+
+                                if (newPlayerHp <= 0) {
+                                    addLog('💀 Du wurdest besiegt...', 'miss')
+                                    setPhase('end')
+                                    setTimeout(() => onDefeat('death'), 1500)
+                                    return
+                                }
                             }
                         } else if (!isDodging) {
                             addLog(`💨 ${combatEnemy.name} verfehlt!`, 'info')
@@ -183,12 +196,19 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
             {/* Player */}
             <div className="border p-4" style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
                 <div className="text-xs tracking-widest mb-1" style={{ color: setting.colors.primary }}>
-                {character.name.toUpperCase()}
+                    {character.name.toUpperCase()}
                 </div>
-                <div className="text-3xl font-black text-white mb-2">{playerHp}<span className="text-sm text-gray-600">/{playerMaxHp}</span></div>
+                <div className="flex items-baseline gap-2 mb-2">
+                    <div className="text-3xl font-black text-white">{playerHp}<span className="text-sm text-gray-600">/{playerMaxHp}</span></div>
+                    {playerShield > 0 && (
+                        <div className="text-sm font-bold" style={{ color: setting.colors.secondary }}>
+                            🛡️ {playerShield}
+                        </div>
+                    )}
+                </div>
                 <div className="h-1.5 rounded-full" style={{ background: '#1a1a1a' }}>
-                <div className="h-1.5 rounded-full transition-all duration-500"
-                    style={{ width: `${pHpPct}%`, background: pHpPct > 30 ? setting.colors.primary : setting.colors.danger }} />
+                    <div className="h-1.5 rounded-full transition-all duration-500"
+                        style={{ width: `${pHpPct}%`, background: pHpPct > 30 ? setting.colors.primary : setting.colors.danger }} />
                 </div>
             </div>
 

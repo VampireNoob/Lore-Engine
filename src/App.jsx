@@ -3,6 +3,7 @@ import { SettingSelect } from './components/SettingSelect'
 import { CharCreate } from './screens/CharCreate'
 import { Story } from './screens/Story'
 import { Combat } from './screens/Combat'
+import { Inventory } from './screens/Inventory'
 
 function App() {
   const { gameState, updateState } = useGameState()
@@ -19,6 +20,11 @@ function App() {
       location: 'Startpunkt',
       hp: character.attrs.end * 4 + 10,
       maxHp: character.attrs.end * 4 + 10,
+      shield: character.class.id === 'bunker' ? 4 :
+              character.class.id === 'raider' ? 2 :
+              character.class.id === 'medic' ? 1 : 0,
+      currency: 50 + character.attrs.cha * 5,
+      inventory: [],
     })
   }
 
@@ -32,6 +38,8 @@ function App() {
     updateState({
       screen: 'story',
       currency: (gameState.currency || 0) + reward,
+      hp: gameState.hp,
+      shield: gameState.shield,
       lastCombatResult: victoryMessage,
     })
   }
@@ -40,8 +48,17 @@ function App() {
     const message = reason === 'flee' ? 'Ich bin geflohen.' : 'Ich wurde besiegt, lebe aber noch.'
     updateState({
       screen: 'story',
+      hp: reason === 'death' ? 1 : gameState.hp,
       lastCombatResult: message,
     })
+  }
+
+  const handleOpenInventory = () => {
+    updateState({ screen: 'inventory' })
+  }
+
+  const handleBackFromInventory = () => {
+    updateState({ screen: 'story' })
   }
 
   return (
@@ -61,6 +78,7 @@ function App() {
           gameState={gameState}
           onUpdateState={updateState}
           onBack={handleBack}
+          onOpenInventory={handleOpenInventory}
         />
       )}
       {gameState.screen === 'combat' && (
@@ -69,6 +87,13 @@ function App() {
           onUpdateState={updateState}
           onVictory={handleVictory}
           onDefeat={handleDefeat}
+        />
+      )}
+      {gameState.screen === 'inventory' && (
+        <Inventory
+          gameState={gameState}
+          onUpdateState={updateState}
+          onBack={handleBackFromInventory}
         />
       )}
     </div>

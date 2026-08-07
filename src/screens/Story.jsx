@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getSettingById } from '../settings'
 
-export function Story({ gameState, onUpdateState, onBack }) {
+export function Story({ gameState, onUpdateState, onBack, onOpenInventory }) {
     const setting = getSettingById(gameState.setting)
     const [storyText, setStoryText] = useState('')
     const [choices, setChoices] = useState([])
@@ -135,9 +135,18 @@ Ansonsten setze combat auf null.
                             </span>
                         </div>
                     </div>
-                    <button onClick={onBack} className="text-xs tracking-widest" style={{ color: '#444' }}>
-                        MENÜ
-                    </button>
+                        <div className="flex gap-4">
+                            <button onClick={onOpenInventory}
+                                className="text-xs tracking-widest"
+                                style={{ color: setting.colors.primary }}>
+                                🎒 INVENTAR
+                            </button>
+                            <button onClick={onBack}
+                                className="text-xs tracking-widest"
+                                style={{ color: '#444' }}>
+                                MENÜ
+                            </button>
+                        </div>
                 </div>
 
                 {/* Story Box */}
