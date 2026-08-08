@@ -38,6 +38,7 @@ Spieler-Charakter:
 Bleib geografisch konsistent — wenn die Story in einer Stadt oder Region beginnt, bleib dort und den umliegenden Gebieten. Springe nicht zwischen verschiedenen Städten hin und her.
 
 Antworte NUR mit validem JSON (kein Markdown, kein Text davor/dahinter).
+Wenn der Spieler einen Gegenstand findet oder bekommt, füge ihn zu "items" hinzu: [{"name": "Gegenstandsname", "desc": "Kurze Beschreibung"}]. Ansonsten items: [].
 Wenn eine Wahl zu Kampf führt, setze type auf "combat" und combat auf {"name": "Gegner-Name", "hp": 15}.
 Ansonsten setze combat auf null.
 
@@ -49,7 +50,8 @@ Ansonsten setze combat auf null.
         {"id": 2, "text": "Aktion (max 60 Zeichen)", "type": "story"},
         {"id": 3, "text": "Aktion (max 60 Zeichen)", "type": "combat"}
     ],
-    "combat": null
+    "combat": null,
+    "items": []
 }`
 
         const history = gameState.history || []
@@ -97,6 +99,10 @@ Ansonsten setze combat auf null.
             setStoryText(parsed.scene)
             setChoices(parsed.choices)
             if (parsed.combat) setLastCombat(parsed.combat)
+                if (parsed.items && parsed.items.length > 0) {
+                    const newInventory = [...(gameState.inventory || []), ...parsed.items]
+                    onUpdateState({ inventory: newInventory })
+                }
         } catch (e) {
             console.error('Error:', e)
             setError(true)
@@ -109,8 +115,6 @@ Ansonsten setze combat auf null.
         if (choice.type === 'combat' && lastCombat) {
             onUpdateState({
                 combatEnemy: lastCombat,
-                hp: character.attrs.end * 4 + 10,
-                maxHp: character.attrs.end * 4 + 10,
                 screen: 'combat'
             })
             return

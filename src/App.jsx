@@ -32,14 +32,14 @@ function App() {
     updateState({ screen: 'settingSelect', history: [], location: '' })
   }
 
-  const handleVictory = (enemy) => {
+  const handleVictory = (enemy, currentHp, currentShield) => {
     const reward = Math.floor(Math.random() * 30) + 20
     const victoryMessage = `Ich habe ${enemy.name} besiegt und ${reward} Caps erbeutet.`
     updateState({
       screen: 'story',
       currency: (gameState.currency || 0) + reward,
-      hp: gameState.hp,
-      shield: gameState.shield,
+      hp: currentHp,
+      shield: currentShield,
       lastCombatResult: victoryMessage,
     })
   }

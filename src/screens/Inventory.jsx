@@ -24,7 +24,7 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                             {gameState.character?.name}
                         </h1>
                     </div>
-                    <button onClick={onBack} className="text-xs tracking-widest"
+                    <button onClick={onBack} className="text-xs tracking-widest cursor-pointer"
                         style={{ color: setting.colors.primary }}>
                         ← ZURÜCK
                     </button>
@@ -79,7 +79,7 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                         {item.desc && <div className="text-xs mt-1" style={{ color: '#555' }}>{item.desc}</div>}
                                     </div>
                                     <button onClick={() => removeItem(index)}
-                                        className="text-xs tracking-widest ml-4"
+                                        className="text-xs tracking-widest ml-4 cursor-pointer"
                                         style={{ color: setting.colors.danger }}>
                                         ✕
                                     </button>
@@ -88,7 +88,6 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                         </div>
                     )}
                 </div>
-
             </div>
         </div>
     )

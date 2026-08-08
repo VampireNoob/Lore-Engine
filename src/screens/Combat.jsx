@@ -81,7 +81,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
                 addLog(`🏆 ${combatEnemy.name} wurde besiegt!`, 'victory')
                 setPhase('end')
                 onUpdateState({ hp: playerHp, shield: playerShield })
-                setTimeout(() => onVictory(combatEnemy), 1500)
+                setTimeout(() => onVictory(combatEnemy, playerHp, playerShield), 1500)
                 return
             }
 
