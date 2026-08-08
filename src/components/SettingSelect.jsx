@@ -7,11 +7,17 @@ export function SettingSelect({ onSelect }) {
 
         {/* Header */}
         <div className="text-center mb-12">
+            <div className="mb-4">
+                <svg width="60" height="60" viewBox="0 0 100 100" className="mx-auto">
+                    <rect width="100" height="100" rx="15" fill="#111"/>
+                    <text x="50" y="72" textAnchor="middle" fontSize="60" fontFamily="monospace" fontWeight="900" fill="#39ff14">L</text>
+                </svg>
+            </div>
             <h1 className="text-5xl font-black tracking-[0.3em] text-white mb-3">
-            LORE ENGINE
+                LORE ENGINE
             </h1>
             <p className="text-sm tracking-[0.2em] text-gray-500 uppercase">
-            Wähle dein Abenteuer
+                Wähle dein Abenteuer
             </p>
         </div>
 
