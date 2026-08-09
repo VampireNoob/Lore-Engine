@@ -55,8 +55,9 @@ const diceDots = {
             <DiceFace value={displayValue} color={color} bg={bg} />
             ) : (
             <svg width="80" height="80" viewBox="0 0 100 100">
-                <polygon points="50,5 95,95 5,95" fill={bg} stroke={color} strokeWidth="3"/>
-                <text x="50" y="78" textAnchor="middle" fontSize="32"
+                <polygon points="50,5 95,35 85,85 15,85 5,35"
+                fill={bg} stroke={color} strokeWidth="3"/>
+                <text x="50" y="62" textAnchor="middle" fontSize="28"
                 fontWeight="900" fontFamily="monospace" fill={color}>
                 {displayValue}
                 </text>

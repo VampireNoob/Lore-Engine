@@ -1,4 +1,5 @@
 import { getSettingById } from '../settings'
+import { getLevel, getXpForNextLevel, XP_PER_LEVEL } from '../hooks/useLevelUp'
 
 export function Inventory({ gameState, onUpdateState, onBack }) {
     const setting = getSettingById(gameState.setting)
@@ -37,6 +38,31 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                     <span className="text-2xl font-black" style={{ color: setting.colors.secondary }}>
                         {currency} {setting.id === 'postApoc' ? 'Caps' : setting.id === 'scifi' ? 'Credits' : setting.id === 'cyberpunk' ? 'Eddies' : 'Gold'}
                     </span>
+                </div>
+
+                {/* Level & XP */}
+                <div className="border p-4 mb-6"
+                    style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs tracking-widest" style={{ color: setting.colors.primary }}>
+                            // LEVEL {gameState.level || 1}
+                        </span>
+                        <span className="text-xs tracking-widest" style={{ color: '#666' }}>
+                            {gameState.xp || 0} XP
+                        </span>
+                    </div>
+                    <div className="h-1.5 rounded-full" style={{ background: '#1a1a1a' }}>
+                        <div className="h-1.5 rounded-full transition-all duration-500"
+                            style={{
+                                width: `${Math.min(100, ((gameState.xp || 0) / (XP_PER_LEVEL[(gameState.level || 1)] || 100)) * 100)}%`,
+                                background: setting.colors.primary
+                            }} />
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: '#444' }}>
+                        {getXpForNextLevel(gameState.xp || 0) !== null
+                            ? `Noch ${getXpForNextLevel(gameState.xp || 0)} XP bis Level ${(gameState.level || 1) + 1}`
+                            : 'MAX LEVEL erreicht! 🏆'}
+                    </div>
                 </div>
 
                 {/* Attribute */}

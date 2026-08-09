@@ -77,7 +77,7 @@ Ansonsten setze combat auf null.
             const data = await resp.json()
 
             if (data.error?.code === 429 || data.error?.code === 503) {
-                setTimeout(() => loadStory(playerChoice), 10000)
+                setTimeout(() => loadStory(playerChoice), 60000)
                 return
             }
 
@@ -136,6 +136,9 @@ Ansonsten setze combat auf null.
                             {character.name}
                             <span className="text-xs font-normal ml-3 tracking-widest" style={{ color: '#555' }}>
                                 {character.class.label}
+                            </span>
+                            <span className="text-xs font-normal ml-3 tracking-widest" style={{ color: setting.colors.secondary }}>
+                                LVL {gameState.level || 1}
                             </span>
                         </div>
                     </div>

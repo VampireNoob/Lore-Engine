@@ -4,6 +4,7 @@ import { CharCreate } from './screens/CharCreate'
 import { Story } from './screens/Story'
 import { Combat } from './screens/Combat'
 import { Inventory } from './screens/Inventory'
+import { calculateXpReward, getLevel, getLevelUpBonus } from './hooks/useLevelUp'
 
 function App() {
   const { gameState, updateState } = useGameState()
@@ -25,6 +26,8 @@ function App() {
               character.class.id === 'medic' ? 1 : 0,
       currency: 50 + character.attrs.cha * 5,
       inventory: [],
+      xp: 0,
+      level: 1,
     })
   }
 
@@ -34,12 +37,27 @@ function App() {
 
   const handleVictory = (enemy, currentHp, currentShield) => {
     const reward = Math.floor(Math.random() * 30) + 20
-    const victoryMessage = `Ich habe ${enemy.name} besiegt und ${reward} Caps erbeutet.`
+    const xpReward = calculateXpReward(enemy)
+    const currentXp = gameState.xp || 0
+    const newXp = currentXp + xpReward
+    const oldLevel = getLevel(currentXp)
+    const newLevel = getLevel(newXp)
+    const leveledUp = newLevel > oldLevel
+
+    const victoryMessage = leveledUp
+      ? `Ich habe ${enemy.name} besiegt, ${reward} Caps und ${xpReward} XP erbeutet. LEVEL UP! Ich bin jetzt Level ${newLevel}!`
+      : `Ich habe ${enemy.name} besiegt, ${reward} Caps und ${xpReward} XP erbeutet.`
+
+    const bonus = leveledUp ? getLevelUpBonus(newLevel) : null
+
     updateState({
       screen: 'story',
       currency: (gameState.currency || 0) + reward,
-      hp: currentHp,
+      hp: leveledUp ? currentHp + bonus.maxHpBonus : currentHp,
+      maxHp: leveledUp ? (gameState.maxHp || 22) + bonus.maxHpBonus : gameState.maxHp,
       shield: currentShield,
+      xp: newXp,
+      level: newLevel,
       lastCombatResult: victoryMessage,
     })
   }
