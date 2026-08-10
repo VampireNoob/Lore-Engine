@@ -47,7 +47,7 @@ const diceDots = {
     return (
         <div className="flex flex-col items-center gap-2">
         <div style={{
-            transform: spinning ? 'rotateY(360deg) rotateX(180deg)' : 'rotateY(0deg)',
+            transform: spinning ? 'rotateY(360deg)' : 'rotateY(0deg)',
             transition: spinning ? 'transform 0.6s ease-in-out' : 'none',
             filter: spinning ? `drop-shadow(0 0 12px ${color})` : `drop-shadow(0 0 4px ${color}44)`,
         }}>
@@ -56,10 +56,10 @@ const diceDots = {
             ) : (
             <svg width="80" height="80" viewBox="0 0 100 100">
                 <polygon points="50,5 95,35 85,85 15,85 5,35"
-                fill={bg} stroke={color} strokeWidth="3"/>
+                    fill={bg} stroke={color} strokeWidth="3"/>
                 <text x="50" y="62" textAnchor="middle" fontSize="28"
-                fontWeight="900" fontFamily="monospace" fill={color}>
-                {displayValue}
+                    fontWeight="900" fontFamily="monospace" fill={color}>
+                    {displayValue}
                 </text>
             </svg>
             )}
