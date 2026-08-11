@@ -8,9 +8,21 @@ export function SettingSelect({ onSelect }) {
         {/* Header */}
         <div className="text-center mb-12">
             <div className="mb-4">
-                <svg width="60" height="60" viewBox="0 0 100 100" className="mx-auto">
-                    <rect width="100" height="100" rx="15" fill="#111"/>
-                    <text x="50" y="72" textAnchor="middle" fontSize="60" fontFamily="monospace" fontWeight="900" fill="#39ff14">L</text>
+                <svg width="70" height="70" viewBox="0 0 100 100" className="mx-auto">
+                    {/* Hintergrund */}
+                    <rect width="100" height="100" rx="15" fill="#111" stroke="#39ff14" strokeWidth="3"/>
+                    {/* D20 Kreis */}
+                    <circle cx="50" cy="50" r="35" fill="none" stroke="#39ff14" strokeWidth="1.5" opacity="0.4"/>
+                    {/* Schwert - Klinge */}
+                    <line x1="50" y1="10" x2="50" y2="75" stroke="#39ff14" strokeWidth="3" strokeLinecap="round"/>
+                    {/* Schwert - Spitze */}
+                    <polygon points="50,8 45,22 55,22" fill="#39ff14"/>
+                    {/* Schwert - Parierstange */}
+                    <line x1="35" y1="65" x2="65" y2="65" stroke="#39ff14" strokeWidth="3" strokeLinecap="round"/>
+                    {/* Schwert - Griff */}
+                    <line x1="50" y1="65" x2="50" y2="82" stroke="#39ff14" strokeWidth="4" strokeLinecap="round"/>
+                    {/* Schwert - Knauf */}
+                    <circle cx="50" cy="85" r="4" fill="#39ff14"/>
                 </svg>
             </div>
             <h1 className="text-5xl font-black tracking-[0.3em] text-white mb-3">

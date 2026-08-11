@@ -63,25 +63,38 @@ Ansonsten setze combat auf null.
 
         try {
             const resp = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+                'https://openrouter.ai/api/v1/chat/completions',
                 {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': 'http://localhost:5173',
+                        'X-Title': 'Lore Engine',
+                    },
                     body: JSON.stringify({
-                        system_instruction: { parts: [{ text: systemPrompt }] },
-                        contents,
+                        model: 'openrouter/auto',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            ...history.map(h => ({
+                                role: h.role === 'model' ? 'assistant' : h.role,
+                                content: h.parts[0].text
+                            })),
+                            { role: 'user', content: userMessage }
+                        ],
                     }),
                 }
             )
 
             const data = await resp.json()
 
-            if (data.error?.code === 429 || data.error?.code === 503) {
-                setTimeout(() => loadStory(playerChoice), 60000)
+            if (data.error) {
+                console.error('OpenRouter error:', data.error)
+                setTimeout(() => loadStory(playerChoice), 10000)
                 return
             }
 
-            const raw = data.candidates[0].content.parts[0].text
+            const raw = data.choices[0].message.content
             const clean = raw.replace(/```json|```/g, '').trim()
             const parsed = JSON.parse(clean)
 
@@ -144,7 +157,7 @@ Ansonsten setze combat auf null.
                     </div>
                         <div className="flex gap-4">
                             <button onClick={onOpenInventory}
-                                className="text-xs tracking-widest"
+                                className="text-xs tracking-widest cursor-pointer"
                                 style={{ color: setting.colors.primary }}>
                                 🎒 INVENTAR
                             </button>
