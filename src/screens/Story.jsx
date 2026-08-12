@@ -3,8 +3,8 @@ import { getSettingById } from '../settings'
 
 export function Story({ gameState, onUpdateState, onBack, onOpenInventory }) {
     const setting = getSettingById(gameState.setting)
-    const [storyText, setStoryText] = useState('')
-    const [choices, setChoices] = useState([])
+    const [storyText, setStoryText] = useState(gameState.storyText || '')
+    const [choices, setChoices] = useState(gameState.storyChoices || [])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(false)
     const [lastCombat, setLastCombat] = useState(null)
@@ -12,13 +12,14 @@ export function Story({ gameState, onUpdateState, onBack, onOpenInventory }) {
     const { character } = gameState
 
     useEffect(() => {
-    const msg = gameState.lastCombatResult
-    if (msg) {
-        onUpdateState({ lastCombatResult: null })
-        loadStory(msg)
-    } else {
-        loadStory()
-    }
+        if (storyText) return // Story already loaded, don't reload
+        const msg = gameState.lastCombatResult
+        if (msg) {
+            onUpdateState({ lastCombatResult: null })
+            loadStory(msg)
+        } else {
+            loadStory()
+        }
     }, [])
 
     const loadStory = async (playerChoice) => {
@@ -107,6 +108,8 @@ Ansonsten setze combat auf null.
             onUpdateState({
                 location: parsed.location || gameState.location,
                 history: newHistory,
+                storyText: parsed.scene,
+                storyChoices: parsed.choices,
             })
 
             setStoryText(parsed.scene)

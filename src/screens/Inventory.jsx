@@ -97,20 +97,59 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                         </div>
                     ) : (
                         <div className="flex flex-col gap-2">
-                            {inventory.map((item, index) => (
-                                <div key={index} className="flex justify-between items-center border p-3"
-                                    style={{ borderColor: setting.colors.border }}>
-                                    <div>
-                                        <div className="text-sm font-bold text-white">{item.name}</div>
-                                        {item.desc && <div className="text-xs mt-1" style={{ color: '#555' }}>{item.desc}</div>}
+                            {inventory.map((item, index) => {
+                                const isHealItem = item.name.toLowerCase().includes('essen') ||
+                                    item.name.toLowerCase().includes('fleisch') ||
+                                    item.name.toLowerCase().includes('brot') ||
+                                    item.name.toLowerCase().includes('dose') ||
+                                    item.name.toLowerCase().includes('wasser') ||
+                                    item.name.toLowerCase().includes('trank') ||
+                                    item.name.toLowerCase().includes('med') ||
+                                    item.name.toLowerCase().includes('verband')
+                                const isShieldItem = item.name.toLowerCase().includes('rüstung') ||
+                                    item.name.toLowerCase().includes('schild') ||
+                                    item.name.toLowerCase().includes('panzer') ||
+                                    item.name.toLowerCase().includes('schutz')
+
+                                const useItem = () => {
+                                    if (isHealItem) {
+                                        const healAmount = 5
+                                        const newHp = Math.min(gameState.maxHp, (gameState.hp || 0) + healAmount)
+                                        onUpdateState({ hp: newHp, inventory: inventory.filter((_, i) => i !== index) })
+                                    } else if (isShieldItem) {
+                                        const newShield = (gameState.shield || 0) + 2
+                                        onUpdateState({ shield: newShield, inventory: inventory.filter((_, i) => i !== index) })
+                                    } else {
+                                        removeItem(index)
+                                    }
+                                }
+
+                                return (
+                                    <div key={index} className="flex justify-between items-center border p-3"
+                                        style={{ borderColor: setting.colors.border }}>
+                                        <div>
+                                            <div className="text-sm font-bold text-white">{item.name}</div>
+                                            {item.desc && <div className="text-xs mt-1" style={{ color: '#555' }}>{item.desc}</div>}
+                                            {isHealItem && <div className="text-xs mt-1" style={{ color: setting.colors.primary }}>+5 HP</div>}
+                                            {isShieldItem && <div className="text-xs mt-1" style={{ color: setting.colors.secondary }}>+2 Schild</div>}
+                                        </div>
+                                        <div className="flex gap-2 ml-4">
+                                            {(isHealItem || isShieldItem) && (
+                                                <button onClick={useItem}
+                                                    className="text-xs tracking-widest cursor-pointer px-2 py-1 border"
+                                                    style={{ color: setting.colors.primary, borderColor: setting.colors.primary }}>
+                                                    BENUTZEN
+                                                </button>
+                                            )}
+                                            <button onClick={() => removeItem(index)}
+                                                className="text-xs tracking-widest cursor-pointer"
+                                                style={{ color: setting.colors.danger }}>
+                                                ✕
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button onClick={() => removeItem(index)}
-                                        className="text-xs tracking-widest ml-4 cursor-pointer"
-                                        style={{ color: setting.colors.danger }}>
-                                        ✕
-                                    </button>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     )}
                 </div>

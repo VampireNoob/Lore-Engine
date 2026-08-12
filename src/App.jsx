@@ -23,7 +23,15 @@ function App() {
       maxHp: character.attrs.end * 4 + 10,
       shield: character.class.id === 'bunker' ? 4 :
               character.class.id === 'raider' ? 2 :
-              character.class.id === 'medic' ? 1 : 0,
+              character.class.id === 'medic' ? 1 :
+              character.class.id === 'warrior' ? 3 :
+              character.class.id === 'mage' ? 1 :
+              character.class.id === 'rogue' ? 1 :
+              character.class.id === 'ranger' ? 2 :
+              character.class.id === 'soldier' ? 3 :
+              character.class.id === 'netrunner' ? 1 :
+              character.class.id === 'streetsamurai' ? 4 :
+              character.class.id === 'pilot' ? 1 : 0,
       currency: 50 + character.attrs.cha * 5,
       inventory: [],
       xp: 0,
