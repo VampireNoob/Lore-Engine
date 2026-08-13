@@ -5,7 +5,7 @@ export function Story({ gameState, onUpdateState, onBack, onOpenInventory }) {
     const setting = getSettingById(gameState.setting)
     const [storyText, setStoryText] = useState(gameState.storyText || '')
     const [choices, setChoices] = useState(gameState.storyChoices || [])
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(!gameState.storyText)
     const [error, setError] = useState(false)
     const [lastCombat, setLastCombat] = useState(null)
 
