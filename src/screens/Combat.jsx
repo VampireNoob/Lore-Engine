@@ -60,7 +60,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
         animateDie(20, 'attack', (atkRoll) => {
         setTimeout(() => {
             animateDie(6, 'attack', (dmgRoll) => {
-            const strBonus = Math.floor(gameState.character.attrs.str / 2)
+            const strBonus = Math.floor(gameState.character.attrs.str / 2) + (gameState.weaponBonus || 0)
             const isCrit = atkRoll >= 19
             const isHit = atkRoll >= 6
             let dmg = 0

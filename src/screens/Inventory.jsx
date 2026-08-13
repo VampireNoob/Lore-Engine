@@ -110,6 +110,17 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                     item.name.toLowerCase().includes('schild') ||
                                     item.name.toLowerCase().includes('panzer') ||
                                     item.name.toLowerCase().includes('schutz')
+                                const isWeaponItem = item.name.toLowerCase().includes('schwert') ||
+                                    item.name.toLowerCase().includes('axt') ||
+                                    item.name.toLowerCase().includes('messer') ||
+                                    item.name.toLowerCase().includes('dolch') ||
+                                    item.name.toLowerCase().includes('bogen') ||
+                                    item.name.toLowerCase().includes('pistole') ||
+                                    item.name.toLowerCase().includes('gewehr') ||
+                                    item.name.toLowerCase().includes('waffe') ||
+                                    item.name.toLowerCase().includes('klinge') ||
+                                    item.name.toLowerCase().includes('stab') ||
+                                    item.name.toLowerCase().includes('speer')
 
                                 const useItem = () => {
                                     if (isHealItem) {
@@ -119,7 +130,10 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                     } else if (isShieldItem) {
                                         const newShield = (gameState.shield || 0) + 2
                                         onUpdateState({ shield: newShield, inventory: inventory.filter((_, i) => i !== index) })
-                                    } else {
+                                    }  else if (isWeaponItem) {
+                                        const newWeaponBonus = (gameState.weaponBonus || 0) + 2
+                                        onUpdateState({ weaponBonus: newWeaponBonus, inventory: inventory.filter((_, i) => i !== index) })
+                                    }else {
                                         removeItem(index)
                                     }
                                 }
@@ -132,9 +146,10 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                             {item.desc && <div className="text-xs mt-1" style={{ color: '#555' }}>{item.desc}</div>}
                                             {isHealItem && <div className="text-xs mt-1" style={{ color: setting.colors.primary }}>+5 HP</div>}
                                             {isShieldItem && <div className="text-xs mt-1" style={{ color: setting.colors.secondary }}>+2 Schild</div>}
+                                            {isWeaponItem && <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>+2 Angriff</div>}
                                         </div>
                                         <div className="flex gap-2 ml-4">
-                                            {(isHealItem || isShieldItem) && (
+                                            {(isHealItem || isShieldItem || isWeaponItem) && (
                                                 <button onClick={useItem}
                                                     className="text-xs tracking-widest cursor-pointer px-2 py-1 border"
                                                     style={{ color: setting.colors.primary, borderColor: setting.colors.primary }}>
