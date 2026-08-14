@@ -66,3 +66,8 @@ VITE_GEMINI_API_KEY=your_api_key_here
 - **Problem:** `undefined` wurde in localStorage gespeichert und verursachte beim Laden Fehler
 - **Lösung:** Null-Checks beim Lesen und Schreiben eingebaut
 - **Lerneffekt:** Immer defensive Programmierung bei externem Storage betreiben
+
+## 📬 Contact
+
+- **GitHub:** [@VampireNoob](https://github.com/VampireNoob)
+- **Instagram:** [@vampirenoob](https://www.instagram.com/vampirenoob)
