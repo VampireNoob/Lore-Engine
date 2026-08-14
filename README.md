@@ -39,3 +39,20 @@ VITE_GEMINI_API_KEY=your_api_key_here
 - [ ] Story history persistence
 - [ ] Language selection
 - [ ] Local co-op (2 players)
+
+## Known Issues & Lessons Learned
+
+### 🔄 API Rate Limits
+- **Problem:** Google Gemini Free Tier hat strenge Rate Limits die das Entwickeln stark behindert haben
+- **Lösung:** Wechsel zu OpenRouter mit Auto-Routing für stabilere Verfügbarkeit
+- **Lerneffekt:** Immer einen Fallback-Plan für externe APIs einplanen
+
+### 📖 Story-Persistenz nach Inventar
+- **Problem:** Nach dem Öffnen des Inventars wurde die Story neu geladen und erzählte eine andere Geschichte
+- **Lösung:** Story-State im gameState gespeichert + Loading-State nur auf `true` wenn noch keine Story vorhanden
+- **Lerneffekt:** React-Komponenten verlieren lokalen State beim Unmounten — wichtige Daten gehören in den globalen State
+
+### 💾 localStorage undefined Bug
+- **Problem:** `undefined` wurde in localStorage gespeichert und verursachte beim Laden Fehler
+- **Lösung:** Null-Checks beim Lesen und Schreiben eingebaut
+- **Lerneffekt:** Immer defensive Programmierung bei externem Storage betreiben
