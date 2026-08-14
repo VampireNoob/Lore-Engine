@@ -50,9 +50,6 @@ VITE_GEMINI_API_KEY=your_api_key_here
 
 ```
 
-## Live Demo
-👉 [lore-engine.netlify.app](https://lore-engine.netlify.app)
-
 ## 🐛 Known Issues & Lessons Learned
 
 ### 🔄 API Rate Limits
