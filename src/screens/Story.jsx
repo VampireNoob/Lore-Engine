@@ -9,32 +9,42 @@ export function Story({ gameState, onUpdateState, onBack, onOpenInventory }) {
     const [error, setError] = useState(false)
     const [lastCombat, setLastCombat] = useState(null)
 
-    const { character } = gameState
+    const players = gameState.players
+    const activeIndex = gameState.activePlayerIndex
+    const activePlayer = players[activeIndex]
 
     useEffect(() => {
         if (storyText) return // Story already loaded, don't reload
         const msg = gameState.lastCombatResult
         if (msg) {
             onUpdateState({ lastCombatResult: null })
-            loadStory(msg)
+            loadStory(msg, activeIndex)
         } else {
-            loadStory()
+            loadStory(null, activeIndex)
         }
     }, [])
 
-    const loadStory = async (playerChoice) => {
+    const buildPartyDescription = () => {
+        return players.map((p, i) =>
+            `- ${p.character.name} (${i === activeIndex ? 'AM ZUG' : 'wartet'}): Klasse ${p.character.class.label}, Stärke ${p.character.attrs.str}, Agilität ${p.character.attrs.agi}, Intelligenz ${p.character.attrs.int}, Ausdauer ${p.character.attrs.end}, Glück ${p.character.attrs.lck}, Charisma ${p.character.attrs.cha}`
+        ).join('\n')
+    }
+
+    const loadStory = async (playerChoice, choosingIndex) => {
         setLoading(true)
         setError(false)
         setChoices([])
 
+        const choosingPlayer = players[choosingIndex]
+
         const systemPrompt = `${setting.systemPrompt}
 
-Spieler-Charakter:
-- Name: ${character.name}
-- Klasse: ${character.class.label}
-- Stärke: ${character.attrs.str}, Agilität: ${character.attrs.agi}, Intelligenz: ${character.attrs.int}
-- Ausdauer: ${character.attrs.end}, Glück: ${character.attrs.lck}, Charisma: ${character.attrs.cha}
-- Aktueller Standort: ${gameState.location || 'Unbekannt'}
+Gruppe (${players.length} Spieler):
+${buildPartyDescription()}
+
+Aktueller Standort: ${gameState.location || 'Unbekannt'}
+
+Die Gruppe reist gemeinsam. Bei jeder Wahl ist immer nur EIN Mitglied "am Zug" (siehe oben) — beziehe dich in der Szene ruhig auf die ganze Gruppe, aber die Handlung/Entscheidung kommt vom Spieler, der gerade am Zug ist.
 
 Bleib geografisch konsistent — wenn die Story in einer Stadt oder Region beginnt, bleib dort und den umliegenden Gebieten. Springe nicht zwischen verschiedenen Städten hin und her.
 
@@ -57,10 +67,7 @@ Ansonsten setze combat auf null.
 
         const history = gameState.history || []
         const userMessage = playerChoice || 'Starte das Abenteuer!'
-        const contents = [
-            ...history,
-            { role: 'user', parts: [{ text: userMessage }] }
-        ]
+        const taggedMessage = playerChoice ? `[${choosingPlayer.character.name}]: ${userMessage}` : userMessage
 
         try {
             const resp = await fetch(
@@ -81,7 +88,7 @@ Ansonsten setze combat auf null.
                                 role: h.role === 'model' ? 'assistant' : h.role,
                                 content: h.parts[0].text
                             })),
-                            { role: 'user', content: userMessage }
+                            { role: 'user', content: taggedMessage }
                         ],
                     }),
                 }
@@ -91,7 +98,7 @@ Ansonsten setze combat auf null.
 
             if (data.error) {
                 console.error('OpenRouter error:', data.error)
-                setTimeout(() => loadStory(playerChoice), 10000)
+                setTimeout(() => loadStory(playerChoice, choosingIndex), 10000)
                 return
             }
 
@@ -101,24 +108,37 @@ Ansonsten setze combat auf null.
 
             const newHistory = [
                 ...history,
-                { role: 'user', parts: [{ text: userMessage }] },
+                { role: 'user', parts: [{ text: taggedMessage }] },
                 { role: 'model', parts: [{ text: raw }] },
             ].slice(-12)
+
+            // Items gehen an den Spieler, der die Wahl getroffen hat
+            let updatedPlayers = players
+            if (parsed.items && parsed.items.length > 0) {
+                updatedPlayers = [...players]
+                updatedPlayers[choosingIndex] = {
+                    ...updatedPlayers[choosingIndex],
+                    inventory: [...(updatedPlayers[choosingIndex].inventory || []), ...parsed.items],
+                }
+            }
+
+            // Nächster Spieler ist dran (Rotation), außer beim allerersten Laden
+            const nextIndex = playerChoice
+                ? (choosingIndex + 1) % players.length
+                : choosingIndex
 
             onUpdateState({
                 location: parsed.location || gameState.location,
                 history: newHistory,
                 storyText: parsed.scene,
                 storyChoices: parsed.choices,
+                players: updatedPlayers,
+                activePlayerIndex: nextIndex,
             })
 
             setStoryText(parsed.scene)
             setChoices(parsed.choices)
             if (parsed.combat) setLastCombat(parsed.combat)
-                if (parsed.items && parsed.items.length > 0) {
-                    const newInventory = [...(gameState.inventory || []), ...parsed.items]
-                    onUpdateState({ inventory: newInventory })
-                }
         } catch (e) {
             console.error('Error:', e)
             setError(true)
@@ -135,7 +155,7 @@ Ansonsten setze combat auf null.
             })
             return
         }
-        loadStory(choice.text)
+        loadStory(choice.text, activeIndex)
     }
 
     return (
@@ -149,14 +169,19 @@ Ansonsten setze combat auf null.
                             {setting.emoji} {(gameState.location || 'Unbekannt').toUpperCase()}
                         </div>
                         <div className="text-lg font-black tracking-widest text-white uppercase">
-                            {character.name}
+                            {activePlayer.character.name}
                             <span className="text-xs font-normal ml-3 tracking-widest" style={{ color: '#555' }}>
-                                {character.class.label}
+                                {activePlayer.character.class.label}
                             </span>
                             <span className="text-xs font-normal ml-3 tracking-widest" style={{ color: setting.colors.secondary }}>
-                                LVL {gameState.level || 1}
+                                LVL {activePlayer.level || 1}
                             </span>
                         </div>
+                        {players.length > 1 && (
+                            <div className="text-xs tracking-widest mt-1" style={{ color: setting.colors.secondary }}>
+                                🎯 AM ZUG: {activePlayer.character.name} ({activeIndex + 1}/{players.length})
+                            </div>
+                        )}
                     </div>
                         <div className="flex gap-4">
                             <button onClick={onOpenInventory}
@@ -181,7 +206,7 @@ Ansonsten setze combat auf null.
                         </div>
                     ) : error ? (
                         <div className="text-sm" style={{ color: setting.colors.danger }}>
-                            ⚠ Verbindungsfehler. <button onClick={() => loadStory()} className="underline">Erneut versuchen</button>
+                            ⚠ Verbindungsfehler. <button onClick={() => loadStory(null, activeIndex)} className="underline">Erneut versuchen</button>
                         </div>
                     ) : (
                         <p className="text-base leading-relaxed" style={{ color: '#bbb' }}>{storyText}</p>

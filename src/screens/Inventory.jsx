@@ -3,12 +3,20 @@ import { getLevel, getXpForNextLevel, XP_PER_LEVEL } from '../hooks/useLevelUp'
 
 export function Inventory({ gameState, onUpdateState, onBack }) {
     const setting = getSettingById(gameState.setting)
-    const inventory = gameState.inventory || []
-    const currency = gameState.currency || 0
+    const activeIndex = gameState.activePlayerIndex
+    const activePlayer = gameState.players[activeIndex]
+    const inventory = activePlayer.inventory || []
+    const currency = activePlayer.currency || 0
+
+    const updateActivePlayer = (updates) => {
+        const updatedPlayers = [...gameState.players]
+        updatedPlayers[activeIndex] = { ...activePlayer, ...updates }
+        onUpdateState({ players: updatedPlayers })
+    }
 
     const removeItem = (index) => {
         const newInventory = inventory.filter((_, i) => i !== index)
-        onUpdateState({ inventory: newInventory })
+        updateActivePlayer({ inventory: newInventory })
     }
 
     return (
@@ -22,8 +30,13 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                             // INVENTAR
                         </div>
                         <h1 className="text-3xl font-black tracking-widest text-white uppercase">
-                            {gameState.character?.name}
+                            {activePlayer.character?.name}
                         </h1>
+                        {gameState.players.length > 1 && (
+                            <div className="text-xs tracking-widest mt-1" style={{ color: setting.colors.secondary }}>
+                                SPIELER {activeIndex + 1}/{gameState.players.length}
+                            </div>
+                        )}
                     </div>
                     <button onClick={onBack} className="text-xs tracking-widest cursor-pointer"
                         style={{ color: setting.colors.primary }}>
@@ -45,22 +58,22 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                     style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
                     <div className="flex justify-between items-center mb-2">
                         <span className="text-xs tracking-widest" style={{ color: setting.colors.primary }}>
-                            // LEVEL {gameState.level || 1}
+                            // LEVEL {activePlayer.level || 1}
                         </span>
                         <span className="text-xs tracking-widest" style={{ color: '#666' }}>
-                            {gameState.xp || 0} XP
+                            {activePlayer.xp || 0} XP
                         </span>
                     </div>
                     <div className="h-1.5 rounded-full" style={{ background: '#1a1a1a' }}>
                         <div className="h-1.5 rounded-full transition-all duration-500"
                             style={{
-                                width: `${Math.min(100, ((gameState.xp || 0) / (XP_PER_LEVEL[(gameState.level || 1)] || 100)) * 100)}%`,
+                                width: `${Math.min(100, ((activePlayer.xp || 0) / (XP_PER_LEVEL[(activePlayer.level || 1)] || 100)) * 100)}%`,
                                 background: setting.colors.primary
                             }} />
                     </div>
                     <div className="text-xs mt-1" style={{ color: '#444' }}>
-                        {getXpForNextLevel(gameState.xp || 0) !== null
-                            ? `Noch ${getXpForNextLevel(gameState.xp || 0)} XP bis Level ${(gameState.level || 1) + 1}`
+                        {getXpForNextLevel(activePlayer.xp || 0) !== null
+                            ? `Noch ${getXpForNextLevel(activePlayer.xp || 0)} XP bis Level ${(activePlayer.level || 1) + 1}`
                             : 'MAX LEVEL erreicht! 🏆'}
                     </div>
                 </div>
@@ -72,7 +85,7 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                         // ATTRIBUTE
                     </div>
                     <div className="grid grid-cols-3 gap-3">
-                        {Object.entries(gameState.character?.attrs || {}).map(([attr, val]) => (
+                        {Object.entries(activePlayer.character?.attrs || {}).map(([attr, val]) => (
                             <div key={attr} className="text-center">
                                 <div className="text-xs tracking-widest mb-1" style={{ color: '#555' }}>
                                     {attr.toUpperCase()}
@@ -125,15 +138,15 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                 const useItem = () => {
                                     if (isHealItem) {
                                         const healAmount = 5
-                                        const newHp = Math.min(gameState.maxHp, (gameState.hp || 0) + healAmount)
-                                        onUpdateState({ hp: newHp, inventory: inventory.filter((_, i) => i !== index) })
+                                        const newHp = Math.min(activePlayer.maxHp, (activePlayer.hp || 0) + healAmount)
+                                        updateActivePlayer({ hp: newHp, inventory: inventory.filter((_, i) => i !== index) })
                                     } else if (isShieldItem) {
-                                        const newShield = (gameState.shield || 0) + 2
-                                        onUpdateState({ shield: newShield, inventory: inventory.filter((_, i) => i !== index) })
-                                    }  else if (isWeaponItem) {
-                                        const newWeaponBonus = (gameState.weaponBonus || 0) + 2
-                                        onUpdateState({ weaponBonus: newWeaponBonus, inventory: inventory.filter((_, i) => i !== index) })
-                                    }else {
+                                        const newShield = (activePlayer.shield || 0) + 2
+                                        updateActivePlayer({ shield: newShield, inventory: inventory.filter((_, i) => i !== index) })
+                                    } else if (isWeaponItem) {
+                                        const newWeaponBonus = (activePlayer.weaponBonus || 0) + 2
+                                        updateActivePlayer({ weaponBonus: newWeaponBonus, inventory: inventory.filter((_, i) => i !== index) })
+                                    } else {
                                         removeItem(index)
                                     }
                                 }
