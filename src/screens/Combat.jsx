@@ -5,13 +5,15 @@ import { getSettingById } from '../settings'
 
 export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
     const setting = getSettingById(gameState.setting)
-    const { character, combatEnemy } = gameState
+    const activePlayer = gameState.players[gameState.activePlayerIndex]
+    const { character } = activePlayer
+    const { combatEnemy } = gameState
 
-    const [playerHp, setPlayerHp] = useState(gameState.hp)
-    const [playerShield, setPlayerShield] = useState(gameState.shield || 0)
+    const [playerHp, setPlayerHp] = useState(activePlayer.hp)
+    const [playerShield, setPlayerShield] = useState(activePlayer.shield || 0)
     const [enemyHp, setEnemyHp] = useState(combatEnemy?.hp || 20)
     const [enemyMaxHp] = useState(combatEnemy?.hp || 20)
-    const [playerMaxHp] = useState(gameState.maxHp || 20)
+    const [playerMaxHp] = useState(activePlayer.maxHp || 20)
     const [log, setLog] = useState([])
     const [rolling, setRolling] = useState(false)
     const [diceResult, setDiceResult] = useState(null)
@@ -60,7 +62,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
         animateDie(20, 'attack', (atkRoll) => {
         setTimeout(() => {
             animateDie(6, 'attack', (dmgRoll) => {
-            const strBonus = Math.floor(gameState.character.attrs.str / 2) + (gameState.weaponBonus || 0)
+            const strBonus = Math.floor(character.attrs.str / 2) + (activePlayer.weaponBonus || 0)
             const isCrit = atkRoll >= 19
             const isHit = atkRoll >= 6
             let dmg = 0
@@ -81,7 +83,6 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
             if (newEnemyHp <= 0) {
                 addLog(`🏆 ${combatEnemy.name} wurde besiegt!`, 'victory')
                 setPhase('end')
-                onUpdateState({ hp: playerHp, shield: playerShield })
                 setTimeout(() => onVictory(combatEnemy, playerHp, playerShield), 1500)
                 return
             }
@@ -95,7 +96,6 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
     const handleDodge = () => {
         if (phase !== 'player' || rolling) return
         setDodging(true)
-        const advantage = hasAdvantage(character.class.id, 'dodge')
         addLog('🛡️ Du bereitest eine Ausweichbewegung vor...', 'info')
         setPhase('animating')
         setTimeout(() => enemyTurn(enemyHp, true), 600)
@@ -105,12 +105,12 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
         if (phase !== 'player' || rolling) return
         setPhase('animating')
         animateDie(6, 'flee', (roll) => {
-            const agiBonus = gameState.character.attrs.agi
+            const agiBonus = character.attrs.agi
             const bonus = hasAdvantage(character.class.id, 'flee') ? 2 : 0
             if (roll + agiBonus + bonus >= 7) {
                 addLog('🏃 Entkommen! Du flüchtest ins Dunkel.', 'info')
                 setPhase('end')
-                setTimeout(() => onDefeat('flee'), 1200)
+                setTimeout(() => onDefeat('flee', playerHp, playerShield), 1200)
             } else {
                 addLog('❌ Flucht fehlgeschlagen!', 'miss')
                 setTimeout(() => enemyTurn(enemyHp), 600)
@@ -131,7 +131,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
                             const { result: dodgeRoll } = hasAdvantage(character.class.id, 'dodge')
                                 ? rollWithAdvantage(6)
                                 : rollNormal(6)
-                            const agiBonus = gameState.character.attrs.agi
+                            const agiBonus = character.attrs.agi
                             if (dodgeRoll + agiBonus >= 6) {
                                 addLog('✨ Ausgewichen! Kein Schaden!', 'info')
                                 setDodging(false)
@@ -159,7 +159,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
                                 if (newPlayerHp <= 0) {
                                     addLog('💀 Du wurdest besiegt...', 'miss')
                                     setPhase('end')
-                                    setTimeout(() => onDefeat('death'), 1500)
+                                    setTimeout(() => onDefeat('death', newPlayerHp, playerShield), 1500)
                                     return
                                 }
                             }
@@ -180,112 +180,112 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
 
     return (
         <div className="min-h-screen p-6" style={{ background: setting.colors.bg }}>
-        <div className="max-w-xl mx-auto">
+            <div className="max-w-xl mx-auto">
 
-            {/* Title */}
-            <div className="text-center mb-6">
-            <div className="text-xs tracking-[0.3em] mb-1" style={{ color: setting.colors.danger }}>
-                // KAMPF
-            </div>
-            <h2 className="text-2xl font-black tracking-widest text-white uppercase">
-                {character.name} vs {combatEnemy?.name}
-            </h2>
-            </div>
-
-            {/* HP Bars */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-            {/* Player */}
-            <div className="border p-4" style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
-                <div className="text-xs tracking-widest mb-1" style={{ color: setting.colors.primary }}>
-                    {character.name.toUpperCase()}
+                {/* Title */}
+                <div className="text-center mb-6">
+                <div className="text-xs tracking-[0.3em] mb-1" style={{ color: setting.colors.danger }}>
+                    // KAMPF
                 </div>
-                <div className="flex items-baseline gap-2 mb-2">
-                    <div className="text-3xl font-black text-white">{playerHp}<span className="text-sm text-gray-600">/{playerMaxHp}</span></div>
-                    {playerShield > 0 && (
-                        <div className="text-sm font-bold" style={{ color: setting.colors.secondary }}>
-                            🛡️ {playerShield}
+                <h2 className="text-2xl font-black tracking-widest text-white uppercase">
+                    {character.name} vs {combatEnemy?.name}
+                </h2>
+                </div>
+
+                {/* HP Bars */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                {/* Player */}
+                <div className="border p-4" style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
+                    <div className="text-xs tracking-widest mb-1" style={{ color: setting.colors.primary }}>
+                        {character.name.toUpperCase()}
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-2">
+                        <div className="text-3xl font-black text-white">{playerHp}<span className="text-sm text-gray-600">/{playerMaxHp}</span></div>
+                        {playerShield > 0 && (
+                            <div className="text-sm font-bold" style={{ color: setting.colors.secondary }}>
+                                🛡️ {playerShield}
+                            </div>
+                        )}
+                    </div>
+                    <div className="h-1.5 rounded-full" style={{ background: '#1a1a1a' }}>
+                        <div className="h-1.5 rounded-full transition-all duration-500"
+                            style={{ width: `${pHpPct}%`, background: pHpPct > 30 ? setting.colors.primary : setting.colors.danger }} />
+                    </div>
+                </div>
+
+                {/* Enemy */}
+                <div className="border p-4" style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
+                    <div className="text-xs tracking-widest mb-1" style={{ color: setting.colors.danger }}>
+                    {combatEnemy?.name?.toUpperCase()}
+                    </div>
+                    <div className="text-3xl font-black text-white mb-2">{enemyHp}<span className="text-sm text-gray-600">/{enemyMaxHp}</span></div>
+                    <div className="h-1.5 rounded-full" style={{ background: '#1a1a1a' }}>
+                    <div className="h-1.5 rounded-full transition-all duration-500"
+                        style={{ width: `${eHpPct}%`, background: eHpPct > 30 ? setting.colors.danger : '#ff6b6b' }} />
+                    </div>
+                </div>
+                </div>
+
+                {/* Dice Animation */}
+                <div className="border p-6 mb-4 text-center min-h-28 flex flex-col items-center justify-center"
+                    style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
+                    {diceResult ? (
+                        <Dice3D
+                            rolling={rolling}
+                            result={diceResult}
+                            diceType={diceType}
+                            color={setting.colors.primary}
+                            bg={setting.colors.surface}
+                        />
+                    ) : (
+                        <div className="text-xs tracking-widest" style={{ color: '#333' }}>
+                            WÄHLE EINE AKTION
                         </div>
                     )}
                 </div>
-                <div className="h-1.5 rounded-full" style={{ background: '#1a1a1a' }}>
-                    <div className="h-1.5 rounded-full transition-all duration-500"
-                        style={{ width: `${pHpPct}%`, background: pHpPct > 30 ? setting.colors.primary : setting.colors.danger }} />
-                </div>
-            </div>
 
-            {/* Enemy */}
-            <div className="border p-4" style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
-                <div className="text-xs tracking-widest mb-1" style={{ color: setting.colors.danger }}>
-                {combatEnemy?.name?.toUpperCase()}
-                </div>
-                <div className="text-3xl font-black text-white mb-2">{enemyHp}<span className="text-sm text-gray-600">/{enemyMaxHp}</span></div>
-                <div className="h-1.5 rounded-full" style={{ background: '#1a1a1a' }}>
-                <div className="h-1.5 rounded-full transition-all duration-500"
-                    style={{ width: `${eHpPct}%`, background: eHpPct > 30 ? setting.colors.danger : '#ff6b6b' }} />
-                </div>
-            </div>
-            </div>
-
-            {/* Dice Animation */}
-            <div className="border p-6 mb-4 text-center min-h-28 flex flex-col items-center justify-center"
-                style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
-                {diceResult ? (
-                    <Dice3D
-                        rolling={rolling}
-                        result={diceResult}
-                        diceType={diceType}
-                        color={setting.colors.primary}
-                        bg={setting.colors.surface}
-                    />
-                ) : (
-                    <div className="text-xs tracking-widest" style={{ color: '#333' }}>
-                        WÄHLE EINE AKTION
+                {/* Combat Log */}
+                <div className="border p-4 mb-4 min-h-24"
+                style={{ background: '#0a0a0a', borderColor: setting.colors.border }}>
+                {log.map((entry, i) => (
+                    <div key={i} className="text-xs mb-1 font-mono"
+                    style={{
+                        color: entry.type === 'crit' ? setting.colors.secondary :
+                        entry.type === 'hit' ? 'white' :
+                        entry.type === 'miss' ? '#444' :
+                        entry.type === 'enemy' ? setting.colors.danger :
+                        entry.type === 'victory' ? setting.colors.primary :
+                        '#666',
+                        opacity: 1 - i * 0.1
+                    }}>
+                    {entry.text}
                     </div>
-                )}
-            </div>
-
-            {/* Combat Log */}
-            <div className="border p-4 mb-4 min-h-24"
-            style={{ background: '#0a0a0a', borderColor: setting.colors.border }}>
-            {log.map((entry, i) => (
-                <div key={i} className="text-xs mb-1 font-mono"
-                style={{
-                    color: entry.type === 'crit' ? setting.colors.secondary :
-                    entry.type === 'hit' ? 'white' :
-                    entry.type === 'miss' ? '#444' :
-                    entry.type === 'enemy' ? setting.colors.danger :
-                    entry.type === 'victory' ? setting.colors.primary :
-                    '#666',
-                    opacity: 1 - i * 0.1
-                }}>
-                {entry.text}
+                ))}
                 </div>
-            ))}
-            </div>
 
-            {/* Actions */}
-            <div className="grid grid-cols-3 gap-3">
-            <button onClick={handleAttack}
-                disabled={phase !== 'player'}
-                className="py-3 text-sm font-bold tracking-widest uppercase transition-all disabled:opacity-30"
-                style={{ background: setting.colors.danger, color: 'white' }}>
-                ⚔️ Angriff
-            </button>
-            <button onClick={handleDodge}
-                disabled={phase !== 'player'}
-                className="py-3 text-sm font-bold tracking-widest uppercase border transition-all disabled:opacity-30"
-                style={{ borderColor: setting.colors.primary, color: setting.colors.primary }}>
-                🛡️ Ausweichen
-            </button>
-            <button onClick={handleFlee}
-                disabled={phase !== 'player'}
-                className="py-3 text-sm font-bold tracking-widest uppercase border transition-all disabled:opacity-30"
-                style={{ borderColor: '#555', color: '#555' }}>
-                🏃 Fliehen
-            </button>
-            </div>
+                {/* Actions */}
+                <div className="grid grid-cols-3 gap-3">
+                <button onClick={handleAttack}
+                    disabled={phase !== 'player'}
+                    className="py-3 text-sm font-bold tracking-widest uppercase transition-all disabled:opacity-30"
+                    style={{ background: setting.colors.danger, color: 'white' }}>
+                    ⚔️ Angriff
+                </button>
+                <button onClick={handleDodge}
+                    disabled={phase !== 'player'}
+                    className="py-3 text-sm font-bold tracking-widest uppercase border transition-all disabled:opacity-30"
+                    style={{ borderColor: setting.colors.primary, color: setting.colors.primary }}>
+                    🛡️ Ausweichen
+                </button>
+                <button onClick={handleFlee}
+                    disabled={phase !== 'player'}
+                    className="py-3 text-sm font-bold tracking-widest uppercase border transition-all disabled:opacity-30"
+                    style={{ borderColor: '#555', color: '#555' }}>
+                    🏃 Fliehen
+                </button>
+                </div>
 
-        </div>
+            </div>
         </div>
     )
 }

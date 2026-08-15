@@ -92,7 +92,7 @@ function App() {
     })
   }
 
-  const handleDefeat = (reason) => {
+  const handleDefeat = (reason, currentHp, currentShield) => {
     const idx = gameState.activePlayerIndex
     const activePlayer = gameState.players[idx]
     const message = reason === 'flee'
@@ -102,7 +102,8 @@ function App() {
     const updatedPlayers = [...gameState.players]
     updatedPlayers[idx] = {
       ...activePlayer,
-      hp: reason === 'death' ? 1 : activePlayer.hp,
+      hp: reason === 'death' ? 1 : currentHp,
+      shield: currentShield,
     }
 
     updateState({
@@ -110,7 +111,7 @@ function App() {
       players: updatedPlayers,
       lastCombatResult: message,
     })
-  }
+}
 
   const handleOpenInventory = () => {
     updateState({ screen: 'inventory' })
