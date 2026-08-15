@@ -3,17 +3,16 @@ import { useLocalStorage } from './useLocalStorage'
 const initialState = {
     screen: 'settingSelect',
     setting: null,
-    character: null,
-    hp: 0,
-    maxHp: 0,
-    currency: 0,
+    playerCount: 1,
+    players: [],          // [{ character, hp, maxHp, shield, currency, inventory, xp, level }]
+    activePlayerIndex: 0, // wer ist gerade am Zug (Story-Wahl / Kampf)
+    creatingIndex: 0,     // während charCreate: welcher Spieler wird gerade erstellt
     location: '',
-    inventory: [],
     history: [],
     turn: 0,
-    }
+}
 
-    export function useGameState() {
+export function useGameState() {
     const [gameState, setGameState, resetGameState] = useLocalStorage('lore-engine-save', initialState)
 
     const safeState = (gameState && typeof gameState === 'object') ? gameState : initialState

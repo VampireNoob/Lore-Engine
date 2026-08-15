@@ -1,42 +1,56 @@
 import { useGameState } from './hooks/useGameState'
 import { SettingSelect } from './components/SettingSelect'
+import { PlayerCountSelect } from './screens/PlayerCountSelect'
 import { CharCreate } from './screens/CharCreate'
 import { Story } from './screens/Story'
 import { Combat } from './screens/Combat'
 import { Inventory } from './screens/Inventory'
 import { calculateXpReward, getLevel, getLevelUpBonus } from './hooks/useLevelUp'
 
+const shieldByClass = {
+    bunker: 4, raider: 2, medic: 1, warrior: 3, mage: 1, rogue: 1,
+    ranger: 2, soldier: 3, netrunner: 1, streetsamurai: 4, pilot: 1,
+}
+
 function App() {
   const { gameState, updateState } = useGameState()
 
   const handleSettingSelect = (setting) => {
-    updateState({ setting: setting.id, screen: 'charCreate' })
+    updateState({ setting: setting.id, screen: 'playerCount' })
+  }
+
+  const handlePlayerCountSelect = (count) => {
+    updateState({ playerCount: count, players: [], creatingIndex: 0, screen: 'charCreate' })
   }
 
   const handleCharStart = (character) => {
-    updateState({
+    const newPlayer = {
       character,
-      screen: 'story',
-      history: [],
-      location: 'Startpunkt',
       hp: character.attrs.end * 4 + 10,
       maxHp: character.attrs.end * 4 + 10,
-      shield: character.class.id === 'bunker' ? 4 :
-              character.class.id === 'raider' ? 2 :
-              character.class.id === 'medic' ? 1 :
-              character.class.id === 'warrior' ? 3 :
-              character.class.id === 'mage' ? 1 :
-              character.class.id === 'rogue' ? 1 :
-              character.class.id === 'ranger' ? 2 :
-              character.class.id === 'soldier' ? 3 :
-              character.class.id === 'netrunner' ? 1 :
-              character.class.id === 'streetsamurai' ? 4 :
-              character.class.id === 'pilot' ? 1 : 0,
+      shield: shieldByClass[character.class.id] || 0,
       currency: 50 + character.attrs.cha * 5,
       inventory: [],
       xp: 0,
       level: 1,
-    })
+    }
+
+    const updatedPlayers = [...gameState.players, newPlayer]
+    const nextIndex = gameState.creatingIndex + 1
+
+    if (nextIndex < gameState.playerCount) {
+      // nächster Spieler ist dran mit Erstellen
+      updateState({ players: updatedPlayers, creatingIndex: nextIndex })
+    } else {
+      // alle Spieler erstellt -> Story startet
+      updateState({
+        players: updatedPlayers,
+        activePlayerIndex: 0,
+        screen: 'story',
+        history: [],
+        location: 'Startpunkt',
+      })
+    }
   }
 
   const handleBack = () => {
@@ -46,35 +60,54 @@ function App() {
   const handleVictory = (enemy, currentHp, currentShield) => {
     const reward = Math.floor(Math.random() * 30) + 20
     const xpReward = calculateXpReward(enemy)
-    const currentXp = gameState.xp || 0
+    const idx = gameState.activePlayerIndex
+    const activePlayer = gameState.players[idx]
+    const currentXp = activePlayer.xp || 0
     const newXp = currentXp + xpReward
     const oldLevel = getLevel(currentXp)
     const newLevel = getLevel(newXp)
     const leveledUp = newLevel > oldLevel
 
     const victoryMessage = leveledUp
-      ? `Ich habe ${enemy.name} besiegt, ${reward} Caps und ${xpReward} XP erbeutet. LEVEL UP! Ich bin jetzt Level ${newLevel}!`
-      : `Ich habe ${enemy.name} besiegt, ${reward} Caps und ${xpReward} XP erbeutet.`
+      ? `${activePlayer.character.name} hat ${enemy.name} besiegt, ${reward} Caps und ${xpReward} XP erbeutet. LEVEL UP! Jetzt Level ${newLevel}!`
+      : `${activePlayer.character.name} hat ${enemy.name} besiegt, ${reward} Caps und ${xpReward} XP erbeutet.`
 
     const bonus = leveledUp ? getLevelUpBonus(newLevel) : null
 
-    updateState({
-      screen: 'story',
-      currency: (gameState.currency || 0) + reward,
+    const updatedPlayers = [...gameState.players]
+    updatedPlayers[idx] = {
+      ...activePlayer,
+      currency: (activePlayer.currency || 0) + reward,
       hp: leveledUp ? currentHp + bonus.maxHpBonus : currentHp,
-      maxHp: leveledUp ? (gameState.maxHp || 22) + bonus.maxHpBonus : gameState.maxHp,
+      maxHp: leveledUp ? (activePlayer.maxHp || 22) + bonus.maxHpBonus : activePlayer.maxHp,
       shield: currentShield,
       xp: newXp,
       level: newLevel,
+    }
+
+    updateState({
+      screen: 'story',
+      players: updatedPlayers,
       lastCombatResult: victoryMessage,
     })
   }
 
   const handleDefeat = (reason) => {
-    const message = reason === 'flee' ? 'Ich bin geflohen.' : 'Ich wurde besiegt, lebe aber noch.'
+    const idx = gameState.activePlayerIndex
+    const activePlayer = gameState.players[idx]
+    const message = reason === 'flee'
+      ? `${activePlayer.character.name} ist geflohen.`
+      : `${activePlayer.character.name} wurde besiegt, lebt aber noch.`
+
+    const updatedPlayers = [...gameState.players]
+    updatedPlayers[idx] = {
+      ...activePlayer,
+      hp: reason === 'death' ? 1 : activePlayer.hp,
+    }
+
     updateState({
       screen: 'story',
-      hp: reason === 'death' ? 1 : gameState.hp,
+      players: updatedPlayers,
       lastCombatResult: message,
     })
   }
@@ -92,9 +125,18 @@ function App() {
       {gameState.screen === 'settingSelect' && (
         <SettingSelect onSelect={handleSettingSelect} />
       )}
+      {gameState.screen === 'playerCount' && (
+        <PlayerCountSelect
+          settingId={gameState.setting}
+          onSelect={handlePlayerCountSelect}
+          onBack={() => updateState({ screen: 'settingSelect' })}
+        />
+      )}
       {gameState.screen === 'charCreate' && (
         <CharCreate
           settingId={gameState.setting}
+          playerNumber={gameState.creatingIndex + 1}
+          totalPlayers={gameState.playerCount}
           onStart={handleCharStart}
           onBack={handleBack}
         />
