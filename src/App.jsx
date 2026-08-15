@@ -135,6 +135,7 @@ function App() {
       )}
       {gameState.screen === 'charCreate' && (
         <CharCreate
+          key={gameState.creatingIndex}
           settingId={gameState.setting}
           playerNumber={gameState.creatingIndex + 1}
           totalPlayers={gameState.playerCount}

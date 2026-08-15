@@ -1,6 +1,41 @@
 import { useState, useEffect } from 'react'
 import { getSettingById } from '../settings'
 
+function safeJsonParse(raw) {
+    const clean = raw.replace(/```json|```/g, '').trim()
+
+    // Versuch 1: normales Parsen
+    try {
+        return JSON.parse(clean)
+    } catch (e) { /* weiter zu Versuch 2 */ }
+
+    // Versuch 2: Steuerzeichen (rohe Zeilenumbrüche) bereinigen
+    try {
+        const repaired = clean.replace(/[\u0000-\u0019]+/g, ' ')
+        return JSON.parse(repaired)
+    } catch (e) { /* weiter zu Versuch 3 */ }
+
+    // Versuch 3: Felder einzeln per Regex retten, wenn die Gesamtstruktur kaputt ist
+    const scene = clean.match(/"scene"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+    const location = clean.match(/"location"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+
+    if (scene) {
+        return {
+            scene: scene[1].replace(/\\"/g, '"'),
+            location: location ? location[1] : null,
+            choices: [
+                { id: 1, text: 'Weiter', type: 'story' },
+                { id: 2, text: 'Umsehen', type: 'story' },
+            ],
+            combat: null,
+            items: [],
+        }
+    }
+
+    // Wenn selbst das scheitert, geben wir es weiter — Story.jsx zeigt dann den Verbindungsfehler-Screen
+    throw new Error('JSON konnte nicht repariert werden')
+}
+
 export function Story({ gameState, onUpdateState, onBack, onOpenInventory }) {
     const setting = getSettingById(gameState.setting)
     const [storyText, setStoryText] = useState(gameState.storyText || '')
@@ -14,14 +49,14 @@ export function Story({ gameState, onUpdateState, onBack, onOpenInventory }) {
     const activePlayer = players[activeIndex]
 
     useEffect(() => {
-        if (storyText) return // Story already loaded, don't reload
         const msg = gameState.lastCombatResult
         if (msg) {
             onUpdateState({ lastCombatResult: null })
             loadStory(msg, activeIndex)
-        } else {
-            loadStory(null, activeIndex)
+            return
         }
+        if (storyText) return // Story bereits geladen, kein Reload nötig
+        loadStory(null, activeIndex)
     }, [])
 
     const buildPartyDescription = () => {
@@ -49,8 +84,9 @@ Die Gruppe reist gemeinsam. Bei jeder Wahl ist immer nur EIN Mitglied "am Zug" (
 Bleib geografisch konsistent — wenn die Story in einer Stadt oder Region beginnt, bleib dort und den umliegenden Gebieten. Springe nicht zwischen verschiedenen Städten hin und her.
 
 Antworte NUR mit validem JSON (kein Markdown, kein Text davor/dahinter).
+WICHTIG: Verwende in String-Werten KEINE echten Zeilenumbrüche und escape alle Anführungszeichen innerhalb von Strings korrekt mit \". Halte "scene" möglichst kurz und ohne wörtliche Rede in Anführungszeichen.
 Wenn der Spieler einen Gegenstand findet oder bekommt, füge ihn zu "items" hinzu: [{"name": "Gegenstandsname", "desc": "Kurze Beschreibung"}]. Ansonsten items: [].
-Wenn eine Wahl zu Kampf führt, setze type auf "combat" und combat auf {"name": "Gegner-Name", "hp": 15}.
+Wenn eine Wahl zu Kampf führt, setze bei dieser choice type auf "combat" und füge dort direkt "enemy": {"name": "Gegner-Name", "hp": 15} hinzu. Wahlen ohne Kampf brauchen kein "enemy"-Feld.
 Ansonsten setze combat auf null.
 
 {
@@ -59,9 +95,8 @@ Ansonsten setze combat auf null.
     "choices": [
         {"id": 1, "text": "Aktion (max 60 Zeichen)", "type": "story"},
         {"id": 2, "text": "Aktion (max 60 Zeichen)", "type": "story"},
-        {"id": 3, "text": "Aktion (max 60 Zeichen)", "type": "combat"}
+        {"id": 3, "text": "Aktion (max 60 Zeichen)", "type": "combat", "enemy": {"name": "Gegner-Name", "hp": 15}}
     ],
-    "combat": null,
     "items": []
 }`
 
@@ -103,8 +138,7 @@ Ansonsten setze combat auf null.
             }
 
             const raw = data.choices[0].message.content
-            const clean = raw.replace(/```json|```/g, '').trim()
-            const parsed = JSON.parse(clean)
+            const parsed = safeJsonParse(raw)
 
             const newHistory = [
                 ...history,
@@ -148,12 +182,12 @@ Ansonsten setze combat auf null.
     }
 
     const makeChoice = (choice) => {
-        if (choice.type === 'combat' && lastCombat) {
-            onUpdateState({
-                combatEnemy: lastCombat,
-                screen: 'combat'
-            })
-            return
+        if (choice.type === 'combat') {
+            const enemy = choice.enemy || lastCombat // Fallback für alte/kaputte Antworten
+            if (enemy) {
+                onUpdateState({ combatEnemy: enemy, screen: 'combat' })
+                return
+            }
         }
         loadStory(choice.text, activeIndex)
     }

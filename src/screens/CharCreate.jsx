@@ -5,7 +5,7 @@ const initialAttrs = { str: 2, agi: 2, int: 2, end: 2, lck: 2, cha: 2 }
 const ATTR_LABELS = { str: 'Stärke', agi: 'Agilität', int: 'Intelligenz', end: 'Ausdauer', lck: 'Glück', cha: 'Charisma' }
 const POINTS_TOTAL = 5
 
-export function CharCreate({ settingId, onStart, onBack }) {
+export function CharCreate({ settingId, onStart, onBack, playerNumber, totalPlayers }) {
     const setting = getSettingById(settingId)
     const [name, setName] = useState('')
     const [selectedClass, setSelectedClass] = useState(null)
@@ -49,6 +49,11 @@ export function CharCreate({ settingId, onStart, onBack }) {
                 <h1 className="text-3xl font-black tracking-widest text-white uppercase">
                     Charakter erstellen
                 </h1>
+                {totalPlayers > 1 && (
+                    <div className="text-sm tracking-widest mt-2" style={{ color: setting.colors.secondary }}>
+                        👤 SPIELER {playerNumber} VON {totalPlayers} — {playerNumber < totalPlayers ? 'übergib das Gerät!' : 'letzter Charakter!'}
+                    </div>
+                )}
                 </div>
 
                 {/* Name */}
@@ -139,7 +144,7 @@ export function CharCreate({ settingId, onStart, onBack }) {
                 style={{ background: setting.colors.primary, color: '#000' }}
                 onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
                 onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                Ins Abenteuer →
+                {totalPlayers > 1 && playerNumber < totalPlayers ? `Weiter zu Spieler ${playerNumber + 1} →` : 'Ins Abenteuer →'}
                 </button>
 
             </div>
