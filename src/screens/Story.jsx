@@ -133,7 +133,8 @@ Ansonsten setze combat auf null.
 
             if (data.error) {
                 console.error('OpenRouter error:', data.error)
-                setTimeout(() => loadStory(playerChoice, choosingIndex), 10000)
+                setError(true)
+                setLoading(false)
                 return
             }
 
