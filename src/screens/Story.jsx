@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getSettingById } from '../settings'
 
 function safeJsonParse(raw) {
@@ -38,6 +38,7 @@ function safeJsonParse(raw) {
 
 export function Story({ gameState, onUpdateState, onBack, onOpenInventory }) {
     const setting = getSettingById(gameState.setting)
+    const hasRunRef = useRef(false)
     const [storyText, setStoryText] = useState(gameState.storyText || '')
     const [choices, setChoices] = useState(gameState.storyChoices || [])
     const [loading, setLoading] = useState(!gameState.storyText)
@@ -49,6 +50,9 @@ export function Story({ gameState, onUpdateState, onBack, onOpenInventory }) {
     const activePlayer = players[activeIndex]
 
     useEffect(() => {
+        if (hasRunRef.current) return
+        hasRunRef.current = true
+
         const msg = gameState.lastCombatResult
         if (msg) {
             onUpdateState({ lastCombatResult: null })
@@ -87,7 +91,6 @@ Antworte NUR mit validem JSON (kein Markdown, kein Text davor/dahinter).
 WICHTIG: Verwende in String-Werten KEINE echten Zeilenumbrüche und escape alle Anführungszeichen innerhalb von Strings korrekt mit \". Halte "scene" möglichst kurz und ohne wörtliche Rede in Anführungszeichen.
 Wenn der Spieler einen Gegenstand findet oder bekommt, füge ihn zu "items" hinzu: [{"name": "Gegenstandsname", "desc": "Kurze Beschreibung"}]. Ansonsten items: [].
 Wenn eine Wahl zu Kampf führt, setze bei dieser choice type auf "combat" und füge dort direkt "enemy": {"name": "Gegner-Name", "hp": 15} hinzu. Wahlen ohne Kampf brauchen kein "enemy"-Feld.
-Ansonsten setze combat auf null.
 
 {
     "scene": "Atmosphärische Szenen-Beschreibung (2-3 Sätze)",
@@ -169,6 +172,7 @@ Ansonsten setze combat auf null.
                 storyChoices: parsed.choices,
                 players: updatedPlayers,
                 activePlayerIndex: nextIndex,
+                lastCombatResult: null,
             })
 
             setStoryText(parsed.scene)
