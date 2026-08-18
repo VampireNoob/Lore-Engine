@@ -13,7 +13,13 @@ const shieldByClass = {
 }
 
 function App() {
-  const { gameState, updateState } = useGameState()
+  const { gameState, updateState, resetGameState } = useGameState()
+
+  const handleResetGame = () => {
+    if (window.confirm('Wirklich ein neues Spiel starten? Der aktuelle Spielstand geht verloren.')) {
+      resetGameState()
+    }
+  }
 
   const handleSettingSelect = (setting) => {
     updateState({ setting: setting.id, screen: 'playerCount' })
@@ -149,6 +155,7 @@ function App() {
           onUpdateState={updateState}
           onBack={handleBack}
           onOpenInventory={handleOpenInventory}
+          onResetGame={handleResetGame}
         />
       )}
       {gameState.screen === 'combat' && (

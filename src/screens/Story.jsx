@@ -36,7 +36,7 @@ function safeJsonParse(raw) {
     throw new Error('JSON konnte nicht repariert werden')
 }
 
-export function Story({ gameState, onUpdateState, onBack, onOpenInventory }) {
+export function Story({ gameState, onUpdateState, onBack, onOpenInventory, onResetGame }) {
     const setting = getSettingById(gameState.setting)
     const hasRunRef = useRef(false)
     const [storyText, setStoryText] = useState(gameState.storyText || '')
@@ -227,6 +227,11 @@ Wenn eine Wahl zu Kampf führt, setze bei dieser choice type auf "combat" und f�
                                 className="text-xs tracking-widest cursor-pointer"
                                 style={{ color: setting.colors.primary }}>
                                 🎒 INVENTAR
+                            </button>
+                            <button onClick={onResetGame}
+                                className="text-xs tracking-widest cursor-pointer"
+                                style={{ color: setting.colors.danger }}>
+                                🔄 NEUES SPIEL
                             </button>
                             <button onClick={onBack}
                                 className="text-xs tracking-widest"
