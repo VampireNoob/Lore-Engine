@@ -4,12 +4,17 @@ const initialState = {
     screen: 'settingSelect',
     setting: null,
     playerCount: 1,
-    players: [],          // [{ character, hp, maxHp, shield, currency, inventory, xp, level }]
-    activePlayerIndex: 0, // wer ist gerade am Zug (Story-Wahl / Kampf)
-    creatingIndex: 0,     // während charCreate: welcher Spieler wird gerade erstellt
+    players: [],
+    activePlayerIndex: 0,
+    creatingIndex: 0,
     location: '',
     history: [],
     turn: 0,
+    stats: {
+        combatsWon: 0,
+        totalXpEarned: 0,
+        totalCapsEarned: 0,
+    },
 }
 
 export function useGameState() {

@@ -4,12 +4,13 @@ import { PlayerCountSelect } from './screens/PlayerCountSelect'
 import { CharCreate } from './screens/CharCreate'
 import { Story } from './screens/Story'
 import { Combat } from './screens/Combat'
+import { GameOver } from './screens/GameOver'
 import { Inventory } from './screens/Inventory'
 import { calculateXpReward, getLevel, getLevelUpBonus } from './hooks/useLevelUp'
 
 const shieldByClass = {
-    bunker: 4, raider: 2, medic: 1, warrior: 3, mage: 1, rogue: 1,
-    ranger: 2, soldier: 3, netrunner: 1, streetsamurai: 4, pilot: 1,
+  bunker: 4, raider: 2, medic: 1, warrior: 3, mage: 1, rogue: 1,
+  ranger: 2, soldier: 3, netrunner: 1, streetsamurai: 4, pilot: 1,
 }
 
 function App() {
@@ -91,25 +92,45 @@ function App() {
       level: newLevel,
     }
 
+    const currentStats = gameState.stats || { combatsWon: 0, totalXpEarned: 0, totalCapsEarned: 0 }
+    const updatedStats = {
+      combatsWon: currentStats.combatsWon + 1,
+      totalXpEarned: currentStats.totalXpEarned + xpReward,
+      totalCapsEarned: currentStats.totalCapsEarned + reward,
+    }
+
     updateState({
       screen: 'story',
       players: updatedPlayers,
       lastCombatResult: victoryMessage,
+      stats: updatedStats,
     })
   }
 
   const handleDefeat = (reason, currentHp, currentShield) => {
     const idx = gameState.activePlayerIndex
     const activePlayer = gameState.players[idx]
+    const isDeath = reason === 'death'
     const message = reason === 'flee'
       ? `${activePlayer.character.name} ist geflohen.`
-      : `${activePlayer.character.name} wurde besiegt, lebt aber noch.`
+      : `${activePlayer.character.name} ist gefallen...`
 
     const updatedPlayers = [...gameState.players]
     updatedPlayers[idx] = {
       ...activePlayer,
-      hp: reason === 'death' ? 1 : currentHp,
+      hp: isDeath ? 0 : currentHp,
       shield: currentShield,
+      isDead: isDeath ? true : (activePlayer.isDead || false),
+    }
+
+    const allDead = updatedPlayers.every(p => p.isDead)
+
+    if (allDead) {
+      updateState({
+        screen: 'gameOver',
+        players: updatedPlayers,
+      })
+      return
     }
 
     updateState({
@@ -117,7 +138,7 @@ function App() {
       players: updatedPlayers,
       lastCombatResult: message,
     })
-}
+  }
 
   const handleOpenInventory = () => {
     updateState({ screen: 'inventory' })
@@ -171,6 +192,12 @@ function App() {
           gameState={gameState}
           onUpdateState={updateState}
           onBack={handleBackFromInventory}
+        />
+      )}
+      {gameState.screen === 'gameOver' && (
+        <GameOver
+            gameState={gameState}
+            onNewGame={handleResetGame}
         />
       )}
     </div>

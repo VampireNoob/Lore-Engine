@@ -36,6 +36,15 @@ function safeJsonParse(raw) {
     throw new Error('JSON konnte nicht repariert werden')
 }
 
+function getNextAliveIndex(players, currentIndex) {
+    const n = players.length
+    for (let i = 1; i <= n; i++) {
+        const idx = (currentIndex + i) % n
+        if (!players[idx].isDead) return idx
+    }
+    return currentIndex // Fallback, sollte nie eintreten (App.jsx fängt "alle tot" vorher ab)
+}
+
 export function Story({ gameState, onUpdateState, onBack, onOpenInventory, onResetGame }) {
     const setting = getSettingById(gameState.setting)
     const hasRunRef = useRef(false)
@@ -65,7 +74,9 @@ export function Story({ gameState, onUpdateState, onBack, onOpenInventory, onRes
 
     const buildPartyDescription = () => {
         return players.map((p, i) =>
-            `- ${p.character.name} (${i === activeIndex ? 'AM ZUG' : 'wartet'}): Klasse ${p.character.class.label}, Stärke ${p.character.attrs.str}, Agilität ${p.character.attrs.agi}, Intelligenz ${p.character.attrs.int}, Ausdauer ${p.character.attrs.end}, Glück ${p.character.attrs.lck}, Charisma ${p.character.attrs.cha}`
+            p.isDead
+                ? `- ${p.character.name}: GEFALLEN, nicht mehr Teil der aktiven Handlung`
+                : `- ${p.character.name} (${i === activeIndex ? 'AM ZUG' : 'wartet'}): Klasse ${p.character.class.label}, Stärke ${p.character.attrs.str}, Agilität ${p.character.attrs.agi}, Intelligenz ${p.character.attrs.int}, Ausdauer ${p.character.attrs.end}, Glück ${p.character.attrs.lck}, Charisma ${p.character.attrs.cha}`
         ).join('\n')
     }
 
@@ -75,7 +86,6 @@ export function Story({ gameState, onUpdateState, onBack, onOpenInventory, onRes
         setChoices([])
 
         const choosingPlayer = players[choosingIndex]
-
         const systemPrompt = `${setting.systemPrompt}
 
 Gruppe (${players.length} Spieler):
@@ -141,7 +151,13 @@ Wenn eine Wahl zu Kampf führt, setze bei dieser choice type auf "combat" und f�
                 return
             }
 
-            const raw = data.choices[0].message.content
+            const raw = data.choices?.[0]?.message?.content
+            if (!raw) {
+                console.error('Leere Antwort von OpenRouter erhalten')
+                setError(true)
+                setLoading(false)
+                return
+            }
             const parsed = safeJsonParse(raw)
 
             const newHistory = [
@@ -162,7 +178,7 @@ Wenn eine Wahl zu Kampf führt, setze bei dieser choice type auf "combat" und f�
 
             // Nächster Spieler ist dran (Rotation), außer beim allerersten Laden
             const nextIndex = playerChoice
-                ? (choosingIndex + 1) % players.length
+                ? getNextAliveIndex(players, choosingIndex)
                 : choosingIndex
 
             onUpdateState({
