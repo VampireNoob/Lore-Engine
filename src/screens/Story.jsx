@@ -45,6 +45,21 @@ function getNextAliveIndex(players, currentIndex) {
     return currentIndex // Fallback, sollte nie eintreten (App.jsx fängt "alle tot" vorher ab)
 }
 
+const currencyKeywords = {
+    postApoc: 'caps',
+    scifi: 'credits',
+    cyberpunk: 'eddies',
+    fantasy: 'gold',
+}
+
+function extractCurrencyAmount(item, settingId) {
+    const keyword = currencyKeywords[settingId]
+    if (!keyword) return null
+    if (!item.name.toLowerCase().includes(keyword)) return null
+    const match = item.name.match(/(\d+)/)
+    return match ? parseInt(match[1], 10) : 10 // Fallback, falls keine Zahl im Namen steht
+}
+
 export function Story({ gameState, onUpdateState, onBack, onOpenInventory, onResetGame }) {
     const setting = getSettingById(gameState.setting)
     const hasRunRef = useRef(false)
@@ -166,13 +181,29 @@ Wenn eine Wahl zu Kampf führt, setze bei dieser choice type auf "combat" und f�
                 { role: 'model', parts: [{ text: raw }] },
             ].slice(-12)
 
-            // Items gehen an den Spieler, der die Wahl getroffen hat
+            // Items gehen an den Spieler, der die Wahl getroffen hat — Währungs-Items werden direkt gutgeschrieben
             let updatedPlayers = players
             if (parsed.items && parsed.items.length > 0) {
                 updatedPlayers = [...players]
+                const targetPlayer = updatedPlayers[choosingIndex]
+
+                let bonusCurrency = 0
+                const realItems = []
+                parsed.items.forEach(item => {
+                    const amount = extractCurrencyAmount(item, setting.id)
+                    if (amount !== null) {
+                        bonusCurrency += amount
+                    } else {
+                        realItems.push(item)
+                    }
+                })
+
                 updatedPlayers[choosingIndex] = {
-                    ...updatedPlayers[choosingIndex],
-                    inventory: [...(updatedPlayers[choosingIndex].inventory || []), ...parsed.items],
+                    ...targetPlayer,
+                    currency: (targetPlayer.currency || 0) + bonusCurrency,
+                    inventory: realItems.length > 0
+                        ? [...(targetPlayer.inventory || []), ...realItems]
+                        : targetPlayer.inventory,
                 }
             }
 
