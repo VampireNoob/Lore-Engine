@@ -1,6 +1,26 @@
 import { getSettingById } from '../settings'
 import { getLevel, getXpForNextLevel, XP_PER_LEVEL } from '../hooks/useLevelUp'
 
+const weaponBonusTable = [
+    { keywords: ['schrotflinte', 'schrottgewehr', 'schrotgewehr'], bonus: 4 },
+    { keywords: ['gewehr', 'rifle'], bonus: 6 },
+    { keywords: ['pistole'], bonus: 2 },
+    { keywords: ['schwert', 'axt', 'messer', 'dolch', 'bogen', 'waffe', 'klinge', 'stab', 'speer'], bonus: 2 },
+]
+
+function getWeaponBonus(name) {
+    const lower = name.toLowerCase()
+    for (const entry of weaponBonusTable) {
+        if (entry.keywords.some(k => lower.includes(k))) return entry.bonus
+    }
+    return null
+}
+
+function isAmmoItem(name) {
+    const lower = name.toLowerCase()
+    return lower.includes('kugel') || lower.includes('munition') || lower.includes('patrone')
+}
+
 export function Inventory({ gameState, onUpdateState, onBack }) {
     const setting = getSettingById(gameState.setting)
     const activeIndex = gameState.activePlayerIndex
@@ -123,17 +143,9 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                     item.name.toLowerCase().includes('schild') ||
                                     item.name.toLowerCase().includes('panzer') ||
                                     item.name.toLowerCase().includes('schutz')
-                                const isWeaponItem = item.name.toLowerCase().includes('schwert') ||
-                                    item.name.toLowerCase().includes('axt') ||
-                                    item.name.toLowerCase().includes('messer') ||
-                                    item.name.toLowerCase().includes('dolch') ||
-                                    item.name.toLowerCase().includes('bogen') ||
-                                    item.name.toLowerCase().includes('pistole') ||
-                                    item.name.toLowerCase().includes('gewehr') ||
-                                    item.name.toLowerCase().includes('waffe') ||
-                                    item.name.toLowerCase().includes('klinge') ||
-                                    item.name.toLowerCase().includes('stab') ||
-                                    item.name.toLowerCase().includes('speer')
+                                const weaponBonus = getWeaponBonus(item.name)
+                                const isWeaponItem = weaponBonus !== null
+                                const isAmmo = isAmmoItem(item.name)
 
                                 const useItem = () => {
                                     if (isHealItem) {
@@ -144,7 +156,10 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                         const newShield = (activePlayer.shield || 0) + 2
                                         updateActivePlayer({ shield: newShield, inventory: inventory.filter((_, i) => i !== index) })
                                     } else if (isWeaponItem) {
-                                        const newWeaponBonus = (activePlayer.weaponBonus || 0) + 2
+                                        const newWeaponBonus = (activePlayer.weaponBonus || 0) + weaponBonus
+                                        updateActivePlayer({ weaponBonus: newWeaponBonus, inventory: inventory.filter((_, i) => i !== index) })
+                                    } else if (isAmmo) {
+                                        const newWeaponBonus = (activePlayer.weaponBonus || 0) + 1
                                         updateActivePlayer({ weaponBonus: newWeaponBonus, inventory: inventory.filter((_, i) => i !== index) })
                                     } else {
                                         removeItem(index)
@@ -159,10 +174,11 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                             {item.desc && <div className="text-xs mt-1" style={{ color: '#555' }}>{item.desc}</div>}
                                             {isHealItem && <div className="text-xs mt-1" style={{ color: setting.colors.primary }}>+5 HP</div>}
                                             {isShieldItem && <div className="text-xs mt-1" style={{ color: setting.colors.secondary }}>+2 Schild</div>}
-                                            {isWeaponItem && <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>+2 Angriff</div>}
+                                            {isWeaponItem && <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>+{weaponBonus} Angriff</div>}
+                                            {isAmmo && <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>+1 Angriff</div>}
                                         </div>
                                         <div className="flex gap-2 ml-4">
-                                            {(isHealItem || isShieldItem || isWeaponItem) && (
+                                            {(isHealItem || isShieldItem || isWeaponItem || isAmmo) && (
                                                 <button onClick={useItem}
                                                     className="text-xs tracking-widest cursor-pointer px-2 py-1 border"
                                                     style={{ color: setting.colors.primary, borderColor: setting.colors.primary }}>
