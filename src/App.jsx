@@ -6,6 +6,7 @@ import { Story } from './screens/Story'
 import { Combat } from './screens/Combat'
 import { GameOver } from './screens/GameOver'
 import { Inventory } from './screens/Inventory'
+import { Statistics } from './screens/Statistics'
 import { calculateXpReward, getLevel, getLevelUpBonus } from './hooks/useLevelUp'
 
 const shieldByClass = {
@@ -46,10 +47,8 @@ function App() {
     const nextIndex = gameState.creatingIndex + 1
 
     if (nextIndex < gameState.playerCount) {
-      // nächster Spieler ist dran mit Erstellen
       updateState({ players: updatedPlayers, creatingIndex: nextIndex })
     } else {
-      // alle Spieler erstellt -> Story startet
       updateState({
         players: updatedPlayers,
         activePlayerIndex: 0,
@@ -148,6 +147,14 @@ function App() {
     updateState({ screen: 'story' })
   }
 
+  const handleOpenStatistics = () => {
+    updateState({ screen: 'statistics' })
+  }
+
+  const handleBackFromStatistics = () => {
+    updateState({ screen: 'story' })
+  }
+
   return (
     <div>
       {gameState.screen === 'settingSelect' && (
@@ -176,6 +183,7 @@ function App() {
           onUpdateState={updateState}
           onBack={handleBack}
           onOpenInventory={handleOpenInventory}
+          onOpenStatistics={handleOpenStatistics}
           onResetGame={handleResetGame}
         />
       )}
@@ -192,6 +200,12 @@ function App() {
           gameState={gameState}
           onUpdateState={updateState}
           onBack={handleBackFromInventory}
+        />
+      )}
+      {gameState.screen === 'statistics' && (
+        <Statistics
+          gameState={gameState}
+          onBack={handleBackFromStatistics}
         />
       )}
       {gameState.screen === 'gameOver' && (

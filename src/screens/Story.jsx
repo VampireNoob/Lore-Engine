@@ -60,7 +60,7 @@ function extractCurrencyAmount(item, settingId) {
     return match ? parseInt(match[1], 10) : 10 // Fallback, falls keine Zahl im Namen steht
 }
 
-export function Story({ gameState, onUpdateState, onBack, onOpenInventory, onResetGame }) {
+export function Story({ gameState, onUpdateState, onBack, onOpenInventory, onOpenStatistics, onResetGame }) {
     const setting = getSettingById(gameState.setting)
     const hasRunRef = useRef(false)
     const [storyText, setStoryText] = useState(gameState.storyText || '')
@@ -274,6 +274,11 @@ Wenn eine Wahl zu Kampf führt, setze bei dieser choice type auf "combat" und f�
                                 className="text-xs tracking-widest cursor-pointer"
                                 style={{ color: setting.colors.primary }}>
                                 🎒 INVENTAR
+                            </button>
+                            <button onClick={onOpenStatistics}
+                                className="text-xs tracking-widest cursor-pointer"
+                                style={{ color: setting.colors.secondary }}>
+                                📊 STATISTIKEN
                             </button>
                             <button onClick={onResetGame}
                                 className="text-xs tracking-widest cursor-pointer"
