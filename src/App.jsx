@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react'
 import { useGameState } from './hooks/useGameState'
+import { useAchievements } from './hooks/useAchievements'
 import { SettingSelect } from './components/SettingSelect'
+import { AchievementToast } from './components/AchievementToast'
 import { PlayerCountSelect } from './screens/PlayerCountSelect'
 import { CharCreate } from './screens/CharCreate'
 import { Story } from './screens/Story'
@@ -16,6 +19,19 @@ const shieldByClass = {
 
 function App() {
   const { gameState, updateState, resetGameState } = useGameState()
+  const { unlocked, checkAchievements } = useAchievements()
+  const [toastQueue, setToastQueue] = useState([])
+
+  useEffect(() => {
+    const newlyUnlocked = checkAchievements(gameState)
+    if (newlyUnlocked.length > 0) {
+      setToastQueue(prev => [...prev, ...newlyUnlocked])
+    }
+  }, [gameState])
+
+  const dismissToast = () => {
+    setToastQueue(prev => prev.slice(1))
+  }
 
   const handleResetGame = () => {
     if (window.confirm('Wirklich ein neues Spiel starten? Der aktuelle Spielstand geht verloren.')) {
@@ -157,6 +173,10 @@ function App() {
 
   return (
     <div>
+      {toastQueue.length > 0 && (
+        <AchievementToast achievement={toastQueue[0]} onDone={dismissToast} />
+      )}
+
       {gameState.screen === 'settingSelect' && (
         <SettingSelect onSelect={handleSettingSelect} />
       )}
@@ -205,6 +225,7 @@ function App() {
       {gameState.screen === 'statistics' && (
         <Statistics
           gameState={gameState}
+          unlockedAchievements={unlocked}
           onBack={handleBackFromStatistics}
         />
       )}

@@ -1,6 +1,7 @@
 import { getSettingById } from '../settings'
+import { ACHIEVEMENTS } from '../hooks/useAchievements'
 
-export function Statistics({ gameState, onBack }) {
+export function Statistics({ gameState, unlockedAchievements, onBack }) {
     const setting = getSettingById(gameState.setting)
     const players = gameState.players || []
     const stats = gameState.stats || { combatsWon: 0, totalXpEarned: 0, totalCapsEarned: 0 }
@@ -82,7 +83,35 @@ export function Statistics({ gameState, onBack }) {
                         ))}
                     </div>
                 </div>
-
+                {/* Achievements */}
+                <div className="border p-5 mt-6"
+                    style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
+                    <div className="text-xs tracking-widest mb-4" style={{ color: setting.colors.primary }}>
+                        // ACHIEVEMENTS ({unlockedAchievements.length}/{ACHIEVEMENTS.length})
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        {ACHIEVEMENTS.map(a => {
+                            const isUnlocked = unlockedAchievements.includes(a.id)
+                            return (
+                                <div key={a.id} className="flex items-center gap-2 p-2 border"
+                                    style={{
+                                        borderColor: isUnlocked ? setting.colors.primary : '#2a2a2a',
+                                        opacity: isUnlocked ? 1 : 0.35,
+                                    }}>
+                                    <div className="text-xl">{isUnlocked ? a.emoji : '🔒'}</div>
+                                    <div>
+                                        <div className="text-xs font-bold" style={{ color: isUnlocked ? 'white' : '#666' }}>
+                                            {a.title}
+                                        </div>
+                                        <div className="text-xs" style={{ color: '#555' }}>
+                                            {a.desc}
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
             </div>
         </div>
     )
