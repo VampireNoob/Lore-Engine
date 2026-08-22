@@ -37,6 +37,49 @@ An AI-powered RPG with dynamic storytelling across 4 unique settings, powered by
 - localStorage (Save System, separate persistence for achievements)
 - Netlify (Deployment)
 
+## 📁 Structure
+
+```
+├── public/
+├── src/
+│   ├── assets/
+│   │   └── icons/
+│   ├── components/
+│   │   ├── AchievementToast.jsx
+│   │   ├── Dice3D.jsx
+│   │   └── SettingSelect.jsx
+│   ├── hooks/
+│   │   ├── useAchievements.js
+│   │   ├── useAmbientMusic.js
+│   │   ├── useCombat.js
+│   │   ├── useGameState.js
+│   │   ├── useLevelUp.js
+│   │   └── useLocalStorage.js
+│   ├── screens/
+│   │   ├── CharCreate.jsx
+│   │   ├── Combat.jsx
+│   │   ├── GameOver.jsx
+│   │   ├── Inventory.jsx
+│   │   ├── PlayerCountSelect.jsx
+│   │   ├── Statistics.jsx
+│   │   └── Story.jsx
+│   ├── settings/
+│   │   ├── cyberpunk.js
+│   │   ├── fantasy.js
+│   │   ├── index.js
+│   │   ├── postApoc.js
+│   │   └── scifi.js
+│   ├── App.jsx
+│   ├── index.css
+│   └── main.jsx
+├── .env.local
+├── .gitignore
+├── eslint.config.js
+├── index.html
+├── package.json
+└── README.md
+```
+
 ## 🚀 Getting Started
 
 ```bash
