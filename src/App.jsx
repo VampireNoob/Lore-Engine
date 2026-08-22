@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useGameState } from './hooks/useGameState'
 import { useAchievements } from './hooks/useAchievements'
+import { useAmbientMusic } from './hooks/useAmbientMusic'
 import { SettingSelect } from './components/SettingSelect'
 import { AchievementToast } from './components/AchievementToast'
 import { PlayerCountSelect } from './screens/PlayerCountSelect'
@@ -20,6 +21,7 @@ const shieldByClass = {
 function App() {
   const { gameState, updateState, resetGameState } = useGameState()
   const { unlocked, checkAchievements } = useAchievements()
+  const { enabled: musicEnabled, toggle: toggleMusic, volume, changeVolume } = useAmbientMusic(gameState.setting)
   const [toastQueue, setToastQueue] = useState([])
 
   useEffect(() => {
@@ -173,6 +175,26 @@ function App() {
 
   return (
     <div>
+      <div className="fixed bottom-4 left-4 z-40 flex items-center gap-2 border px-3 py-2"
+          style={{ background: '#111', borderColor: musicEnabled ? '#39ff14' : '#333' }}>
+          <button onClick={toggleMusic}
+            className="text-xs tracking-widest cursor-pointer"
+            style={{ color: musicEnabled ? '#39ff14' : '#666' }}>
+            {musicEnabled ? '🔊 MUSIK AN' : '🔈 MUSIK AUS'}
+          </button>
+          {musicEnabled && (
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={e => changeVolume(parseFloat(e.target.value))}
+              className="w-20 cursor-pointer"
+            />
+          )}
+      </div>
+
       {toastQueue.length > 0 && (
         <AchievementToast achievement={toastQueue[0]} onDone={dismissToast} />
       )}
