@@ -16,24 +16,25 @@ An AI-powered RPG with dynamic storytelling across 4 unique settings, powered by
 - ⚔️ Turn-based combat system with D20/D6 dice mechanics
 - 🎲 Animated dice rolls with advantage system per class
 - 🛡️ Shield system per character class
-- 🎒 Inventory system with usable items (heal, shield, weapons)
+- 🎒 Inventory system with usable items (heal, shield, weapon-specific attack bonuses, ammo)
 - ⬆️ Level-Up system with XP
 - 💀 Game Over screen with fade-in animation, sound and run summary
+- 📊 Statistics screen (fights won, total XP, total currency, group overview)
+- 🏆 Achievements system (10 achievements, persists independently of save resets)
+- 🎵 Procedural ambient music per setting (Web Audio API, no external audio files) with volume control
 - 🔄 "New Game" reset without needing devtools
 - 💾 Auto-save via localStorage
 - 🎨 Setting-specific color themes and UI
 
 ## 🚀 Roadmap
-- [ ] 🏆 Achievements system (First Victory, Level 5, 100 Caps...)
-- [ ] 🎵 Background music per setting
-- [ ] 📊 Statistics screen (fights won, total XP, etc. — tracking already in place)
 - [ ] 🛠️ Item crafting/combination system
 
 ## 🛠️ Tech Stack
 - React + Vite
 - Tailwind CSS v4
 - OpenRouter API (AI Narrator, auto-routing)
-- localStorage (Save System)
+- Web Audio API (sound effects & ambient music)
+- localStorage (Save System, separate persistence for achievements)
 - Netlify (Deployment)
 
 ## 🚀 Getting Started
@@ -55,25 +56,30 @@ VITE_GEMINI_API_KEY=your_api_key_here
 ## 🐛 Known Issues & Lessons Learned
 
 ### 🔄 API Rate Limits
-- **Problem:** Google Gemini Free Tier hatte strenge Rate Limits die das Entwickeln stark behindert haben
-- **Lösung:** Wechsel zu OpenRouter mit Auto-Routing für stabilere Verfügbarkeit
-- **Lerneffekt:** Immer einen Fallback-Plan für externe APIs einplanen
+- **Problem:** Google Gemini's free tier had strict rate limits that significantly slowed down development
+- **Solution:** Switched to OpenRouter with auto-routing for more reliable availability
+- **Takeaway:** Always plan a fallback for external APIs
 
-### 📖 Story-Persistenz nach Inventar
-- **Problem:** Nach dem Öffnen des Inventars wurde die Story neu geladen und erzählte eine andere Geschichte
-- **Lösung:** Story-State im gameState gespeichert + Loading-State nur auf `true` wenn noch keine Story vorhanden
-- **Lerneffekt:** React-Komponenten verlieren lokalen State beim Unmounten — wichtige Daten gehören in den globalen State
+### 📖 Story Persistence After Opening Inventory
+- **Problem:** Opening the inventory caused the story to reload and tell a different story
+- **Solution:** Story state saved in gameState + loading state only set to `true` when no story exists yet
+- **Takeaway:** React components lose local state on unmount — important data belongs in global state
 
 ### 💾 localStorage undefined Bug
-- **Problem:** `undefined` wurde in localStorage gespeichert und verursachte beim Laden Fehler
-- **Lösung:** Null-Checks beim Lesen und Schreiben eingebaut
-- **Lerneffekt:** Immer defensive Programmierung bei externem Storage betreiben
+- **Problem:** `undefined` was being saved to localStorage and caused errors on load
+- **Solution:** Added null checks when reading and writing
+- **Takeaway:** Always use defensive programming with external storage
 
-### 🏁 Stale-Closure Race Condition im Mehrspieler-State
-- **Problem:** Beim Übergang zwischen Kampf und Story konnte die Spieler-Rotation ungewollt einen zusätzlichen Schritt weiterspringen — reproduzierbar, aber schwer zu fassen
-- **Ursache:** Der zentrale `updateState`-Merge (`{...safeState, ...updates}`) nutzte einen pro Render eingefrorenen State-Schnappschuss. Zwei zeitversetzte `onUpdateState`-Aufrufe innerhalb derselben Funktion griffen auf denselben veralteten Schnappschuss zurück — der zweite Aufruf hat dadurch ein bereits gelöschtes Feld (`lastCombatResult`) versehentlich wiederhergestellt
-- **Lösung:** Betroffenes Feld im finalen Update-Aufruf explizit auf `null` gesetzt, zusätzlich ein `useRef`-Guard gegen doppelte Effect-Ausführung durch React StrictMode
-- **Lerneffekt:** Bei mehreren zeitversetzten State-Updates in derselben Closure genau prüfen, welcher State-Schnappschuss tatsächlich verwendet wird — insbesondere bei async Code
+### 🏁 Stale Closure Race Condition in Multiplayer State
+- **Problem:** During the transition between combat and story, player rotation could unexpectedly skip an extra step forward — reproducible, but hard to pin down
+- **Cause:** The central `updateState` merge (`{...safeState, ...updates}`) used a state snapshot frozen per render. Two time-delayed `onUpdateState` calls within the same function referenced the same stale snapshot — the second call unintentionally restored an already-cleared field (`lastCombatResult`)
+- **Solution:** Explicitly set the affected field to `null` in the final update call, plus a `useRef` guard against duplicate effect execution caused by React StrictMode
+- **Takeaway:** With multiple time-delayed state updates in the same closure, carefully check which state snapshot is actually being used — especially with async code
+
+### 🔊 Browser Autoplay Policy
+- **Problem:** Sounds/music via the Web Audio API don't start automatically unless triggered by a direct user interaction (e.g. on page reload)
+- **Solution:** Music is deliberately started via an explicit toggle button instead of automatically on load
+- **Takeaway:** Modern browsers consistently block audio autoplay — design for a UI interaction as the trigger instead of fighting it
 
 ## 📬 Contact
 
