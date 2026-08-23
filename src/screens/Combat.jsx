@@ -62,17 +62,20 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
         animateDie(20, 'attack', (atkRoll) => {
         setTimeout(() => {
             animateDie(6, 'attack', (dmgRoll) => {
-            const strBonus = Math.floor(character.attrs.str / 2) + (activePlayer.weaponBonus || 0)
+            const weaponBonus = activePlayer.weaponBonus || 0
+            const strBonus = Math.floor(character.attrs.str / 2) + weaponBonus
             const isCrit = atkRoll >= 19
             const isHit = atkRoll >= 6
             let dmg = 0
 
             if (isCrit) {
                 dmg = (dmgRoll + strBonus) * 2
-                addLog(`💥 KRITISCH! Du triffst für ${dmg} Schaden!`, 'crit')
+                const bonusText = weaponBonus > 0 ? ` (inkl. +${weaponBonus} Waffenbonus)` : ''
+                addLog(`💥 KRITISCH! Du triffst für ${dmg} Schaden!${bonusText}`, 'crit')
             } else if (isHit) {
                 dmg = dmgRoll + strBonus
-                addLog(`⚔️ Treffer! Du triffst für ${dmg} Schaden.`, 'hit')
+                const bonusText = weaponBonus > 0 ? ` (inkl. +${weaponBonus} Waffenbonus)` : ''
+                addLog(`⚔️ Treffer! Du triffst für ${dmg} Schaden.${bonusText}`, 'hit')
             } else {
                 addLog(`💨 Verfehlt! Der Angriff geht daneben.`, 'miss')
             }
