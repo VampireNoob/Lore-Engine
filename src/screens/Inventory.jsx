@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { getSettingById } from '../settings'
 import { getLevel, getXpForNextLevel, XP_PER_LEVEL } from '../hooks/useLevelUp'
 
@@ -21,12 +22,56 @@ function isAmmoItem(name) {
     return lower.includes('kugel') || lower.includes('munition') || lower.includes('patrone')
 }
 
+const healKeywords = ['essen', 'fleisch', 'brot', 'dose', 'wasser', 'trank', 'med', 'verband']
+const shieldKeywords = ['rüstung', 'schild', 'panzer', 'schutz']
+
+function isHealItemName(name) {
+    const lower = name.toLowerCase()
+    return healKeywords.some(k => lower.includes(k))
+}
+
+function isShieldItemName(name) {
+    const lower = name.toLowerCase()
+    return shieldKeywords.some(k => lower.includes(k))
+}
+
+const materialCategories = [
+    { key: 'metal', keywords: ['schrott', 'metall', 'blech', 'teile', 'draht'] },
+    { key: 'textile', keywords: ['stoff', 'tuch', 'leder', 'faser', 'verband'] },
+    { key: 'chemical', keywords: ['chemikalie', 'säure', 'öl', 'treibstoff'] },
+    { key: 'raw', keywords: ['holz', 'stein', 'knochen'] },
+]
+
+function getMaterialCategory(name) {
+    const lower = name.toLowerCase()
+    for (const entry of materialCategories) {
+        if (entry.keywords.some(k => lower.includes(k))) return entry.key
+    }
+    return null
+}
+
+const craftingRecipes = [
+    { pair: ['metal', 'textile'], result: { name: 'Behelfsrüstung', desc: 'Improvisierter Schutz aus Metall und Stoff.' }, type: 'shield', value: 3 },
+    { pair: ['metal', 'metal'], result: { name: 'Verstärkte Waffe', desc: 'Zusammengeschweißte Metallteile ergeben eine schlagkräftigere Waffe.' }, type: 'weapon', value: 3 },
+    { pair: ['chemical', 'textile'], result: { name: 'Medizin-Set', desc: 'Improvisiertes Heilset aus Chemikalien und Verbandsmaterial.' }, type: 'heal', value: 8 },
+]
+
+function findRecipe(catA, catB) {
+    return craftingRecipes.find(r =>
+        (r.pair[0] === catA && r.pair[1] === catB) ||
+        (r.pair[0] === catB && r.pair[1] === catA)
+    )
+}
+
 export function Inventory({ gameState, onUpdateState, onBack }) {
     const setting = getSettingById(gameState.setting)
     const activeIndex = gameState.activePlayerIndex
     const activePlayer = gameState.players[activeIndex]
     const inventory = activePlayer.inventory || []
     const currency = activePlayer.currency || 0
+    const [craftMode, setCraftMode] = useState(false)
+    const [selectedForCraft, setSelectedForCraft] = useState([])
+    const [craftMessage, setCraftMessage] = useState('')
 
     const updateActivePlayer = (updates) => {
         const updatedPlayers = [...gameState.players]
@@ -37,6 +82,45 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
     const removeItem = (index) => {
         const newInventory = inventory.filter((_, i) => i !== index)
         updateActivePlayer({ inventory: newInventory })
+    }
+
+    const toggleCraftSelect = (index) => {
+        setCraftMessage('')
+        setSelectedForCraft(prev => {
+            if (prev.includes(index)) return prev.filter(i => i !== index)
+            if (prev.length >= 2) return prev
+            return [...prev, index]
+        })
+    }
+
+    const handleCraft = () => {
+        if (selectedForCraft.length !== 2) return
+        const [idxA, idxB] = selectedForCraft
+        const catA = getMaterialCategory(inventory[idxA].name)
+        const catB = getMaterialCategory(inventory[idxB].name)
+
+        if (!catA || !catB) {
+            setCraftMessage('Diese Gegenstände können nicht kombiniert werden.')
+            return
+        }
+
+        const recipe = findRecipe(catA, catB)
+        if (!recipe) {
+            setCraftMessage('Für diese Kombination gibt es kein Rezept.')
+            return
+        }
+
+        const newInventory = inventory.filter((_, i) => !selectedForCraft.includes(i))
+        newInventory.push({
+            name: recipe.result.name,
+            desc: recipe.result.desc,
+            craftBonusType: recipe.type,
+            craftBonusValue: recipe.value,
+        })
+
+        updateActivePlayer({ inventory: newInventory })
+        setSelectedForCraft([])
+        setCraftMessage(`✨ ${recipe.result.name} hergestellt!`)
     }
 
     return (
@@ -121,9 +205,31 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                 {/* Inventar */}
                 <div className="border p-4"
                     style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
-                    <div className="text-xs tracking-widest mb-3" style={{ color: setting.colors.primary }}>
-                        // GEGENSTÄNDE ({inventory.length})
+                    <div className="flex justify-between items-center mb-3">
+                        <div className="text-xs tracking-widest" style={{ color: setting.colors.primary }}>
+                            // GEGENSTÄNDE ({inventory.length})
+                        </div>
+                        <button onClick={() => { setCraftMode(!craftMode); setSelectedForCraft([]); setCraftMessage('') }}
+                            className="text-xs tracking-widest cursor-pointer border px-2 py-1"
+                            style={{ color: craftMode ? setting.colors.primary : '#666', borderColor: craftMode ? setting.colors.primary : '#333' }}>
+                            🛠️ {craftMode ? 'FERTIG' : 'KOMBINIEREN'}
+                        </button>
                     </div>
+
+                    {craftMode && (
+                        <div className="mb-3 flex justify-between items-center">
+                            <div className="text-xs" style={{ color: '#888' }}>
+                                {craftMessage || `${selectedForCraft.length}/2 Gegenstände ausgewählt`}
+                            </div>
+                            <button onClick={handleCraft}
+                                disabled={selectedForCraft.length !== 2}
+                                className="text-xs tracking-widest cursor-pointer px-3 py-1 border disabled:opacity-30"
+                                style={{ color: setting.colors.primary, borderColor: setting.colors.primary }}>
+                                KOMBINIEREN
+                            </button>
+                        </div>
+                    )}
+
                     {inventory.length === 0 ? (
                         <div className="text-center py-8 text-xs tracking-widest" style={{ color: '#333' }}>
                             KEINE GEGENSTÄNDE
@@ -131,23 +237,30 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                     ) : (
                         <div className="flex flex-col gap-2">
                             {inventory.map((item, index) => {
-                                const isHealItem = item.name.toLowerCase().includes('essen') ||
-                                    item.name.toLowerCase().includes('fleisch') ||
-                                    item.name.toLowerCase().includes('brot') ||
-                                    item.name.toLowerCase().includes('dose') ||
-                                    item.name.toLowerCase().includes('wasser') ||
-                                    item.name.toLowerCase().includes('trank') ||
-                                    item.name.toLowerCase().includes('med') ||
-                                    item.name.toLowerCase().includes('verband')
-                                const isShieldItem = item.name.toLowerCase().includes('rüstung') ||
-                                    item.name.toLowerCase().includes('schild') ||
-                                    item.name.toLowerCase().includes('panzer') ||
-                                    item.name.toLowerCase().includes('schutz')
+                                const materialCategory = getMaterialCategory(item.name)
+                                const isHealItem = isHealItemName(item.name)
+                                const isShieldItem = isShieldItemName(item.name)
                                 const weaponBonus = getWeaponBonus(item.name)
                                 const isWeaponItem = weaponBonus !== null
                                 const isAmmo = isAmmoItem(item.name)
+                                const isSelectedForCraft = selectedForCraft.includes(index)
 
                                 const useItem = () => {
+                                    if (item.craftBonusType === 'heal') {
+                                        const newHp = Math.min(activePlayer.maxHp, (activePlayer.hp || 0) + item.craftBonusValue)
+                                        updateActivePlayer({ hp: newHp, inventory: inventory.filter((_, i) => i !== index) })
+                                        return
+                                    }
+                                    if (item.craftBonusType === 'shield') {
+                                        const newShield = (activePlayer.shield || 0) + item.craftBonusValue
+                                        updateActivePlayer({ shield: newShield, inventory: inventory.filter((_, i) => i !== index) })
+                                        return
+                                    }
+                                    if (item.craftBonusType === 'weapon') {
+                                        const newWeaponBonus = (activePlayer.weaponBonus || 0) + item.craftBonusValue
+                                        updateActivePlayer({ weaponBonus: newWeaponBonus, inventory: inventory.filter((_, i) => i !== index) })
+                                        return
+                                    }
                                     if (isHealItem) {
                                         const healAmount = 5
                                         const newHp = Math.min(activePlayer.maxHp, (activePlayer.hp || 0) + healAmount)
@@ -167,29 +280,44 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                 }
 
                                 return (
-                                    <div key={index} className="flex justify-between items-center border p-3"
-                                        style={{ borderColor: setting.colors.border }}>
+                                    <div key={index} className="flex justify-between items-center border p-3 cursor-pointer"
+                                        style={{ borderColor: isSelectedForCraft ? setting.colors.primary : setting.colors.border }}
+                                        onClick={() => craftMode && toggleCraftSelect(index)}>
                                         <div>
                                             <div className="text-sm font-bold text-white">{item.name}</div>
                                             {item.desc && <div className="text-xs mt-1" style={{ color: '#555' }}>{item.desc}</div>}
+                                            {craftMode && (
+                                                <div className="text-xs mt-1" style={{ color: materialCategory ? setting.colors.secondary : '#444' }}>
+                                                    {materialCategory === 'metal' && '🔩 Metall'}
+                                                    {materialCategory === 'textile' && '🧵 Stoff'}
+                                                    {materialCategory === 'chemical' && '🧪 Chemie'}
+                                                    {materialCategory === 'raw' && '🪵 Rohstoff'}
+                                                    {!materialCategory && '— kein Material'}
+                                                </div>
+                                            )}
                                             {isHealItem && <div className="text-xs mt-1" style={{ color: setting.colors.primary }}>+5 HP</div>}
                                             {isShieldItem && <div className="text-xs mt-1" style={{ color: setting.colors.secondary }}>+2 Schild</div>}
                                             {isWeaponItem && <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>+{weaponBonus} Angriff</div>}
                                             {isAmmo && <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>+1 Angriff</div>}
+                                            {item.craftBonusType === 'heal' && <div className="text-xs mt-1" style={{ color: setting.colors.primary }}>+{item.craftBonusValue} HP</div>}
+                                            {item.craftBonusType === 'shield' && <div className="text-xs mt-1" style={{ color: setting.colors.secondary }}>+{item.craftBonusValue} Schild</div>}
+                                            {item.craftBonusType === 'weapon' && <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>+{item.craftBonusValue} Angriff</div>}
                                         </div>
                                         <div className="flex gap-2 ml-4">
-                                            {(isHealItem || isShieldItem || isWeaponItem || isAmmo) && (
-                                                <button onClick={useItem}
+                                            {!craftMode && (isHealItem || isShieldItem || isWeaponItem || isAmmo || item.craftBonusType) && (
+                                                <button onClick={(e) => { e.stopPropagation(); useItem() }}
                                                     className="text-xs tracking-widest cursor-pointer px-2 py-1 border"
                                                     style={{ color: setting.colors.primary, borderColor: setting.colors.primary }}>
                                                     BENUTZEN
                                                 </button>
                                             )}
-                                            <button onClick={() => removeItem(index)}
-                                                className="text-xs tracking-widest cursor-pointer"
-                                                style={{ color: setting.colors.danger }}>
-                                                ✕
-                                            </button>
+                                            {!craftMode && (
+                                                <button onClick={(e) => { e.stopPropagation(); removeItem(index) }}
+                                                    className="text-xs tracking-widest cursor-pointer"
+                                                    style={{ color: setting.colors.danger }}>
+                                                    ✕
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 )
