@@ -59,6 +59,9 @@ function App() {
       inventory: [],
       xp: 0,
       level: 1,
+      meleeBonus: 0,
+      rangedBonus: 0,
+      ammo: 0,
     }
 
     const updatedPlayers = [...gameState.players, newPlayer]
@@ -81,7 +84,7 @@ function App() {
     updateState({ screen: 'settingSelect', history: [], location: '' })
   }
 
-  const handleVictory = (enemy, currentHp, currentShield) => {
+  const handleVictory = (enemy, currentHp, currentShield, currentAmmo) => {
     const reward = Math.floor(Math.random() * 30) + 20
     const xpReward = calculateXpReward(enemy)
     const idx = gameState.activePlayerIndex
@@ -105,6 +108,7 @@ function App() {
       hp: leveledUp ? currentHp + bonus.maxHpBonus : currentHp,
       maxHp: leveledUp ? (activePlayer.maxHp || 22) + bonus.maxHpBonus : activePlayer.maxHp,
       shield: currentShield,
+      ammo: currentAmmo,
       xp: newXp,
       level: newLevel,
     }
@@ -124,7 +128,7 @@ function App() {
     })
   }
 
-  const handleDefeat = (reason, currentHp, currentShield) => {
+  const handleDefeat = (reason, currentHp, currentShield, currentAmmo) => {
     const idx = gameState.activePlayerIndex
     const activePlayer = gameState.players[idx]
     const isDeath = reason === 'death'
@@ -137,6 +141,7 @@ function App() {
       ...activePlayer,
       hp: isDeath ? 0 : currentHp,
       shield: currentShield,
+      ammo: currentAmmo,
       isDead: isDeath ? true : (activePlayer.isDead || false),
     }
 

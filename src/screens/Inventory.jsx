@@ -3,19 +3,22 @@ import { getSettingById } from '../settings'
 import { getLevel, getXpForNextLevel, XP_PER_LEVEL } from '../hooks/useLevelUp'
 
 const weaponBonusTable = [
-    { keywords: ['schrotflinte', 'schrottgewehr', 'schrotgewehr'], bonus: 4 },
-    { keywords: ['gewehr', 'rifle'], bonus: 6 },
-    { keywords: ['pistole'], bonus: 2 },
-    { keywords: ['schwert', 'axt', 'messer', 'dolch', 'bogen', 'waffe', 'klinge', 'stab', 'speer'], bonus: 2 },
+    { keywords: ['schrotflinte', 'schrottgewehr', 'schrotgewehr'], bonus: 4, type: 'ranged' },
+    { keywords: ['gewehr', 'rifle'], bonus: 6, type: 'ranged' },
+    { keywords: ['pistole'], bonus: 2, type: 'ranged' },
+    { keywords: ['schwert', 'axt', 'messer', 'dolch', 'bogen', 'waffe', 'klinge', 'stab', 'speer'], bonus: 2, type: 'melee' },
+    { keywords: ['schlagring', 'brechstange', 'eisenstange', 'knüppel', 'hebel', 'rohr', 'kolben'], bonus: 2, type: 'melee' },
 ]
 
-function getWeaponBonus(name) {
+function getWeaponInfo(name) {
     const lower = name.toLowerCase()
     for (const entry of weaponBonusTable) {
-        if (entry.keywords.some(k => lower.includes(k))) return entry.bonus
+        if (entry.keywords.some(k => lower.includes(k))) return { bonus: entry.bonus, type: entry.type }
     }
     return null
 }
+
+const AMMO_PER_ITEM = 5
 
 function isAmmoItem(name) {
     const lower = name.toLowerCase()
@@ -36,7 +39,7 @@ function isShieldItemName(name) {
 }
 
 const materialCategories = [
-    { key: 'metal', keywords: ['schrott', 'metall', 'blech', 'teile', 'draht'] },
+    { key: 'metal', keywords: ['schrott', 'metall', 'blech', 'teile', 'draht', 'eisen', 'stahl', 'kupfer'] },
     { key: 'textile', keywords: ['stoff', 'tuch', 'leder', 'faser', 'verband'] },
     { key: 'chemical', keywords: ['chemikalie', 'säure', 'öl', 'treibstoff'] },
     { key: 'raw', keywords: ['holz', 'stein', 'knochen'] },
@@ -69,6 +72,9 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
     const activePlayer = gameState.players[activeIndex]
     const inventory = activePlayer.inventory || []
     const currency = activePlayer.currency || 0
+    const meleeBonus = activePlayer.meleeBonus ?? activePlayer.weaponBonus ?? 0
+    const rangedBonus = activePlayer.rangedBonus || 0
+    const ammo = activePlayer.ammo || 0
     const [craftMode, setCraftMode] = useState(false)
     const [selectedForCraft, setSelectedForCraft] = useState([])
     const [craftMessage, setCraftMessage] = useState('')
@@ -157,6 +163,37 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                     </span>
                 </div>
 
+                {/* Waffen-Status */}
+                {(meleeBonus > 0 || rangedBonus > 0) && (
+                    <div className="border p-4 mb-6"
+                        style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
+                        <div className="text-xs tracking-widest mb-3" style={{ color: setting.colors.primary }}>
+                            // AUSRÜSTUNG
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                            <div>
+                                <div className="text-xl font-black text-white">+{meleeBonus}</div>
+                                <div className="text-xs" style={{ color: '#666' }}>Nahkampf</div>
+                            </div>
+                            <div>
+                                <div className="text-xl font-black text-white">+{rangedBonus}</div>
+                                <div className="text-xs" style={{ color: '#666' }}>Fernkampf</div>
+                            </div>
+                            <div>
+                                <div className="text-xl font-black" style={{ color: rangedBonus > 0 && ammo === 0 ? setting.colors.danger : 'white' }}>
+                                    {ammo}
+                                </div>
+                                <div className="text-xs" style={{ color: '#666' }}>Munition</div>
+                            </div>
+                        </div>
+                        {rangedBonus > 0 && ammo === 0 && (
+                            <div className="text-xs mt-2" style={{ color: setting.colors.danger }}>
+                                ⚠ Keine Munition mehr — Fernkampfbonus wirkt nicht.
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Level & XP */}
                 <div className="border p-4 mb-6"
                     style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
@@ -240,8 +277,8 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                 const materialCategory = getMaterialCategory(item.name)
                                 const isHealItem = isHealItemName(item.name)
                                 const isShieldItem = isShieldItemName(item.name)
-                                const weaponBonus = getWeaponBonus(item.name)
-                                const isWeaponItem = weaponBonus !== null
+                                const weaponInfo = getWeaponInfo(item.name)
+                                const isWeaponItem = weaponInfo !== null
                                 const isAmmo = isAmmoItem(item.name)
                                 const isSelectedForCraft = selectedForCraft.includes(index)
 
@@ -257,8 +294,7 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                         return
                                     }
                                     if (item.craftBonusType === 'weapon') {
-                                        const newWeaponBonus = (activePlayer.weaponBonus || 0) + item.craftBonusValue
-                                        updateActivePlayer({ weaponBonus: newWeaponBonus, inventory: inventory.filter((_, i) => i !== index) })
+                                        updateActivePlayer({ meleeBonus: meleeBonus + item.craftBonusValue, inventory: inventory.filter((_, i) => i !== index) })
                                         return
                                     }
                                     if (isHealItem) {
@@ -269,11 +305,13 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                         const newShield = (activePlayer.shield || 0) + 2
                                         updateActivePlayer({ shield: newShield, inventory: inventory.filter((_, i) => i !== index) })
                                     } else if (isWeaponItem) {
-                                        const newWeaponBonus = (activePlayer.weaponBonus || 0) + weaponBonus
-                                        updateActivePlayer({ weaponBonus: newWeaponBonus, inventory: inventory.filter((_, i) => i !== index) })
+                                        if (weaponInfo.type === 'ranged') {
+                                            updateActivePlayer({ rangedBonus: rangedBonus + weaponInfo.bonus, inventory: inventory.filter((_, i) => i !== index) })
+                                        } else {
+                                            updateActivePlayer({ meleeBonus: meleeBonus + weaponInfo.bonus, inventory: inventory.filter((_, i) => i !== index) })
+                                        }
                                     } else if (isAmmo) {
-                                        const newWeaponBonus = (activePlayer.weaponBonus || 0) + 1
-                                        updateActivePlayer({ weaponBonus: newWeaponBonus, inventory: inventory.filter((_, i) => i !== index) })
+                                        updateActivePlayer({ ammo: ammo + AMMO_PER_ITEM, inventory: inventory.filter((_, i) => i !== index) })
                                     } else {
                                         removeItem(index)
                                     }
@@ -297,11 +335,15 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
                                             )}
                                             {isHealItem && <div className="text-xs mt-1" style={{ color: setting.colors.primary }}>+5 HP</div>}
                                             {isShieldItem && <div className="text-xs mt-1" style={{ color: setting.colors.secondary }}>+2 Schild</div>}
-                                            {isWeaponItem && <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>+{weaponBonus} Angriff</div>}
-                                            {isAmmo && <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>+1 Angriff</div>}
+                                            {isWeaponItem && (
+                                                <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>
+                                                    +{weaponInfo.bonus} {weaponInfo.type === 'ranged' ? 'Fernkampf' : 'Nahkampf'}
+                                                </div>
+                                            )}
+                                            {isAmmo && <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>+{AMMO_PER_ITEM} Munition</div>}
                                             {item.craftBonusType === 'heal' && <div className="text-xs mt-1" style={{ color: setting.colors.primary }}>+{item.craftBonusValue} HP</div>}
                                             {item.craftBonusType === 'shield' && <div className="text-xs mt-1" style={{ color: setting.colors.secondary }}>+{item.craftBonusValue} Schild</div>}
-                                            {item.craftBonusType === 'weapon' && <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>+{item.craftBonusValue} Angriff</div>}
+                                            {item.craftBonusType === 'weapon' && <div className="text-xs mt-1" style={{ color: setting.colors.danger }}>+{item.craftBonusValue} Nahkampf</div>}
                                         </div>
                                         <div className="flex gap-2 ml-4">
                                             {!craftMode && (isHealItem || isShieldItem || isWeaponItem || isAmmo || item.craftBonusType) && (

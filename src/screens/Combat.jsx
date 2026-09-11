@@ -9,8 +9,12 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
     const { character } = activePlayer
     const { combatEnemy } = gameState
 
+    const meleeBonus = activePlayer.meleeBonus ?? activePlayer.weaponBonus ?? 0
+    const rangedBonus = activePlayer.rangedBonus || 0
+
     const [playerHp, setPlayerHp] = useState(activePlayer.hp)
     const [playerShield, setPlayerShield] = useState(activePlayer.shield || 0)
+    const [playerAmmo, setPlayerAmmo] = useState(activePlayer.ammo || 0)
     const [enemyHp, setEnemyHp] = useState(combatEnemy?.hp || 20)
     const [enemyMaxHp] = useState(combatEnemy?.hp || 20)
     const [playerMaxHp] = useState(activePlayer.maxHp || 20)
@@ -62,19 +66,28 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
         animateDie(20, 'attack', (atkRoll) => {
         setTimeout(() => {
             animateDie(6, 'attack', (dmgRoll) => {
-            const weaponBonus = activePlayer.weaponBonus || 0
-            const strBonus = Math.floor(character.attrs.str / 2) + weaponBonus
+            const hasAmmoForShot = rangedBonus > 0 && playerAmmo > 0
+            const effectiveRangedBonus = hasAmmoForShot ? rangedBonus : 0
+            const totalWeaponBonus = meleeBonus + effectiveRangedBonus
+            const strBonus = Math.floor(character.attrs.str / 2) + totalWeaponBonus
             const isCrit = atkRoll >= 19
             const isHit = atkRoll >= 6
             let dmg = 0
 
+            if (hasAmmoForShot) {
+                setPlayerAmmo(prev => Math.max(0, prev - 1))
+            }
+
+            let bonusText = totalWeaponBonus > 0 ? ` (inkl. +${totalWeaponBonus} Waffenbonus)` : ''
+            if (rangedBonus > 0 && !hasAmmoForShot) {
+                bonusText += ' — Keine Munition mehr!'
+            }
+
             if (isCrit) {
                 dmg = (dmgRoll + strBonus) * 2
-                const bonusText = weaponBonus > 0 ? ` (inkl. +${weaponBonus} Waffenbonus)` : ''
                 addLog(`💥 KRITISCH! Du triffst für ${dmg} Schaden!${bonusText}`, 'crit')
             } else if (isHit) {
                 dmg = dmgRoll + strBonus
-                const bonusText = weaponBonus > 0 ? ` (inkl. +${weaponBonus} Waffenbonus)` : ''
                 addLog(`⚔️ Treffer! Du triffst für ${dmg} Schaden.${bonusText}`, 'hit')
             } else {
                 addLog(`💨 Verfehlt! Der Angriff geht daneben.`, 'miss')
@@ -86,7 +99,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
             if (newEnemyHp <= 0) {
                 addLog(`🏆 ${combatEnemy.name} wurde besiegt!`, 'victory')
                 setPhase('end')
-                setTimeout(() => onVictory(combatEnemy, playerHp, playerShield), 1500)
+                setTimeout(() => onVictory(combatEnemy, playerHp, playerShield, playerAmmo), 1500)
                 return
             }
 
@@ -113,7 +126,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
             if (roll + agiBonus + bonus >= 7) {
                 addLog('🏃 Entkommen! Du flüchtest ins Dunkel.', 'info')
                 setPhase('end')
-                setTimeout(() => onDefeat('flee', playerHp, playerShield), 1200)
+                setTimeout(() => onDefeat('flee', playerHp, playerShield, playerAmmo), 1200)
             } else {
                 addLog('❌ Flucht fehlgeschlagen!', 'miss')
                 setTimeout(() => enemyTurn(enemyHp), 600)
@@ -162,7 +175,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
                                 if (newPlayerHp <= 0) {
                                     addLog('💀 Du wurdest besiegt...', 'miss')
                                     setPhase('end')
-                                    setTimeout(() => onDefeat('death', newPlayerHp, playerShield), 1500)
+                                    setTimeout(() => onDefeat('death', newPlayerHp, playerShield, playerAmmo), 1500)
                                     return
                                 }
                             }
@@ -202,11 +215,16 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
                     <div className="text-xs tracking-widest mb-1" style={{ color: setting.colors.primary }}>
                         {character.name.toUpperCase()}
                     </div>
-                    <div className="flex items-baseline gap-2 mb-2">
+                    <div className="flex items-baseline gap-2 mb-2 flex-wrap">
                         <div className="text-3xl font-black text-white">{playerHp}<span className="text-sm text-gray-600">/{playerMaxHp}</span></div>
                         {playerShield > 0 && (
                             <div className="text-sm font-bold" style={{ color: setting.colors.secondary }}>
                                 🛡️ {playerShield}
+                            </div>
+                        )}
+                        {rangedBonus > 0 && (
+                            <div className="text-sm font-bold" style={{ color: playerAmmo > 0 ? setting.colors.primary : setting.colors.danger }}>
+                                🔫 {playerAmmo}
                             </div>
                         )}
                     </div>
