@@ -136,6 +136,7 @@ export function useAmbientMusic(settingId) {
     const masterGainRef = useRef(null)
     const stopFnRef = useRef(null)
     const [enabled, setEnabled] = useState(false)
+    const [volume, setVolume] = useState(0.5)
 
     useEffect(() => {
         return () => {
@@ -174,8 +175,6 @@ export function useAmbientMusic(settingId) {
         }
     }
 
-    const [volume, setVolume] = useState(0.5)
-
     const changeVolume = (value) => {
         setVolume(value)
         if (masterGainRef.current) {
@@ -183,5 +182,10 @@ export function useAmbientMusic(settingId) {
         }
     }
 
-    return { enabled, toggle, volume, changeVolume }
+    const duck = (active) => {
+        if (!masterGainRef.current) return
+        masterGainRef.current.gain.value = active ? volume * 0.15 : volume
+    }
+
+    return { enabled, toggle, volume, changeVolume, duck }
 }

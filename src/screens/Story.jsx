@@ -144,7 +144,7 @@ Wenn eine Wahl zu Kampf fÃ¼hrt, setze bei dieser choice type auf "combat" und fÃ
                         'X-Title': 'Lore Engine',
                     },
                     body: JSON.stringify({
-                        model: 'openrouter/auto',
+                        model: 'openrouter/free',
                         messages: [
                             { role: 'system', content: systemPrompt },
                             ...history.map(h => ({

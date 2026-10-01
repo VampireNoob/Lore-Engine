@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useGameState } from './hooks/useGameState'
 import { useAchievements } from './hooks/useAchievements'
 import { useAmbientMusic } from './hooks/useAmbientMusic'
+import { useTextToSpeech } from './hooks/useTextToSpeech'
+import { calculateXpReward, getLevel, getLevelUpBonus } from './hooks/useLevelUp'
 import { SettingSelect } from './components/SettingSelect'
 import { AchievementToast } from './components/AchievementToast'
 import { PlayerCountSelect } from './screens/PlayerCountSelect'
@@ -11,7 +13,6 @@ import { Combat } from './screens/Combat'
 import { GameOver } from './screens/GameOver'
 import { Inventory } from './screens/Inventory'
 import { Statistics } from './screens/Statistics'
-import { calculateXpReward, getLevel, getLevelUpBonus } from './hooks/useLevelUp'
 
 const shieldByClass = {
   bunker: 4, raider: 2, medic: 1, warrior: 3, mage: 1, rogue: 1,
@@ -21,15 +22,46 @@ const shieldByClass = {
 function App() {
   const { gameState, updateState, resetGameState } = useGameState()
   const { unlocked, checkAchievements } = useAchievements()
-  const { enabled: musicEnabled, toggle: toggleMusic, volume, changeVolume } = useAmbientMusic(gameState.setting)
+  const { enabled: musicEnabled, toggle: toggleMusic, volume, changeVolume, duck } = useAmbientMusic(gameState.setting)
+  const { speak, stop: stopSpeaking } = useTextToSpeech()
+  const [ttsEnabled, setTtsEnabled] = useState(true)
+  const lastSpokenTextRef = useRef('')
   const [toastQueue, setToastQueue] = useState([])
 
-  useEffect(() => {
-    const newlyUnlocked = checkAchievements(gameState)
-    if (newlyUnlocked.length > 0) {
-      setToastQueue(prev => [...prev, ...newlyUnlocked])
+useEffect(() => {
+  const newlyUnlocked = checkAchievements(gameState)
+  if (newlyUnlocked.length > 0) {
+    setToastQueue(prev => [...prev, ...newlyUnlocked])
+  }
+}, [gameState])
+
+useEffect(() => {
+    if (!ttsEnabled || gameState.screen !== 'story') return
+    const text = gameState.storyText
+    if (!text || text === lastSpokenTextRef.current) return
+    lastSpokenTextRef.current = text
+
+    duck(true)
+    speak(text, { onEnd: () => duck(false) })
+}, [gameState.storyText, gameState.screen, ttsEnabled])
+
+useEffect(() => {
+    if (gameState.screen !== 'story') {
+        stopSpeaking()
+        duck(false)
     }
-  }, [gameState])
+}, [gameState.screen])
+
+const toggleTts = () => {
+    setTtsEnabled(prev => {
+        const next = !prev
+        if (!next) {
+            stopSpeaking()
+            duck(false)
+        }
+        return next
+    })
+}
 
   const dismissToast = () => {
     setToastQueue(prev => prev.slice(1))
@@ -180,7 +212,8 @@ function App() {
 
   return (
     <div>
-      <div className="fixed bottom-4 left-4 z-40 flex items-center gap-2 border px-3 py-2"
+      <div className="fixed bottom-4 left-4 z-40 flex flex-col gap-2">
+        <div className="flex items-center gap-2 border px-3 py-2"
           style={{ background: '#111', borderColor: musicEnabled ? '#39ff14' : '#333' }}>
           <button onClick={toggleMusic}
             className="text-xs tracking-widest cursor-pointer"
@@ -198,6 +231,12 @@ function App() {
               className="w-20 cursor-pointer"
             />
           )}
+        </div>
+        <button onClick={toggleTts}
+          className="text-xs tracking-widest cursor-pointer border px-3 py-2"
+          style={{ background: '#111', borderColor: ttsEnabled ? '#39ff14' : '#333', color: ttsEnabled ? '#39ff14' : '#666' }}>
+          {ttsEnabled ? '🗣️ VORLESEN AN' : '🔇 VORLESEN AUS'}
+        </button>
       </div>
 
       {toastQueue.length > 0 && (
