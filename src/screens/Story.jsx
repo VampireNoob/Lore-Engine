@@ -117,6 +117,8 @@ WICHTIG: Verwende in String-Werten KEINE echten Zeilenumbrüche und escape alle 
 Wenn der Spieler einen Gegenstand findet oder bekommt, füge ihn zu "items" hinzu: [{"name": "Gegenstandsname", "desc": "Kurze Beschreibung"}]. Ansonsten items: [].
 Wenn eine Wahl zu Kampf führt, setze bei dieser choice type auf "combat" und füge dort direkt "enemy": {"name": "Gegner-Name", "hp": 15} hinzu. Wahlen ohne Kampf brauchen kein "enemy"-Feld.
 
+SPRACHE: Schreibe ALLE Textwerte ausnahmslos auf Deutsch ("scene", "location", jeden Text in "choices", Gegner- und Gegenstandsnamen sowie Beschreibungen). Die JSON-Schlüssel bleiben wie im Beispiel. Das gilt auch dann, wenn der bisherige Verlauf englische Texte enthält.
+
 {
     "scene": "Atmosphärische Szenen-Beschreibung (2-3 Sätze)",
     "location": "Ortsname (max 20 Zeichen)",
