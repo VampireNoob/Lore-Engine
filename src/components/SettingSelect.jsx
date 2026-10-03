@@ -1,28 +1,27 @@
 import { settings } from '../settings'
 
+const LOGO_COLOR = '#5fae4e'
+
 export function SettingSelect({ onSelect }) {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-8"
-        style={{ background: '#0a0a0a' }}>
+        style={{
+            backgroundImage: "linear-gradient(rgba(10, 10, 10, 0.35), rgba(10, 10, 10, 0.85)), url('/images/start-bg.jpg')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center top',
+        }}>
 
         {/* Header */}
         <div className="text-center mb-12">
             <div className="mb-4">
                 <svg width="70" height="70" viewBox="0 0 100 100" className="mx-auto">
-                    {/* Hintergrund */}
-                    <rect width="100" height="100" rx="15" fill="#111" stroke="#39ff14" strokeWidth="3"/>
-                    {/* D20 Kreis */}
-                    <circle cx="50" cy="50" r="35" fill="none" stroke="#39ff14" strokeWidth="1.5" opacity="0.4"/>
-                    {/* Schwert - Klinge */}
-                    <line x1="50" y1="10" x2="50" y2="75" stroke="#39ff14" strokeWidth="3" strokeLinecap="round"/>
-                    {/* Schwert - Spitze */}
-                    <polygon points="50,8 45,22 55,22" fill="#39ff14"/>
-                    {/* Schwert - Parierstange */}
-                    <line x1="35" y1="65" x2="65" y2="65" stroke="#39ff14" strokeWidth="3" strokeLinecap="round"/>
-                    {/* Schwert - Griff */}
-                    <line x1="50" y1="65" x2="50" y2="82" stroke="#39ff14" strokeWidth="4" strokeLinecap="round"/>
-                    {/* Schwert - Knauf */}
-                    <circle cx="50" cy="85" r="4" fill="#39ff14"/>
+                    <rect width="100" height="100" rx="15" fill="#111" stroke={LOGO_COLOR} strokeWidth="3"/>
+                    <circle cx="50" cy="50" r="35" fill="none" stroke={LOGO_COLOR} strokeWidth="1.5" opacity="0.4"/>
+                    <line x1="50" y1="10" x2="50" y2="75" stroke={LOGO_COLOR} strokeWidth="3" strokeLinecap="round"/>
+                    <polygon points="50,8 45,22 55,22" fill={LOGO_COLOR}/>
+                    <line x1="35" y1="65" x2="65" y2="65" stroke={LOGO_COLOR} strokeWidth="3" strokeLinecap="round"/>
+                    <line x1="50" y1="65" x2="50" y2="82" stroke={LOGO_COLOR} strokeWidth="4" strokeLinecap="round"/>
+                    <circle cx="50" cy="85" r="4" fill={LOGO_COLOR}/>
                 </svg>
             </div>
             <h1 className="text-5xl font-black tracking-[0.3em] text-white mb-3">
