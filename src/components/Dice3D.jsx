@@ -1,6 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+
+const CANVAS_SIZE = 120
+const ROLL_SPIN_SPEED = 16
+const SETTLE_SPEED = 10
+
+const createTilt = (x, y) => new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, 0))
+
+// ---------- D6 ----------
 
 const diceDots = {
     1: [[50, 50]],
@@ -24,20 +32,16 @@ const D6_FACE_ROTATIONS = {
     6: [-Math.PI / 2, 0, 0],
 }
 
-// Leichte Schräglage im Ruhezustand, damit man die 3D-Form erkennt
-const REST_TILT = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.4, 0.4, 0))
+const D6_TILT = createTilt(-0.4, 0.4)
 
 const D6_TARGETS = Object.fromEntries(
     Object.entries(D6_FACE_ROTATIONS).map(([value, [x, y, z]]) => [
         value,
-        REST_TILT.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z))),
+        D6_TILT.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z))),
     ])
 )
 
-const ROLL_SPIN_SPEED = 16
-const SETTLE_SPEED = 10
-
-function createFaceTexture(value, color, bg) {
+function createD6FaceTexture(value, color, bg) {
     const size = 256
     const canvas = document.createElement('canvas')
     canvas.width = size
@@ -63,21 +67,134 @@ function createFaceTexture(value, color, bg) {
     return texture
 }
 
-function D6Mesh({ rolling, result, color, bg }) {
+// ---------- D20 ----------
+
+const D20_RADIUS = 1.15
+const D20_TILT = createTilt(-0.25, 0.25)
+
+// Textur-Atlas: jede der 20 Flächen bekommt eine eigene Zelle mit Dreieck und Zahl
+const CELL_SIZE = 256
+const ATLAS_COLS = 8
+const ATLAS_ROWS = 4
+const TRIANGLE_RADIUS = 118 // Umkreisradius des gleichseitigen Dreiecks in einer Zelle
+
+// Pixelpositionen des Dreiecks in der Zelle (Spitze oben, Ursprung oben links)
+function getCellTriangle(index) {
+    const originX = (index % ATLAS_COLS) * CELL_SIZE
+    const originY = Math.floor(index / ATLAS_COLS) * CELL_SIZE
+    const halfWidth = (TRIANGLE_RADIUS * Math.sqrt(3)) / 2
+    const top = (CELL_SIZE - TRIANGLE_RADIUS * 1.5) / 2
+    const centerX = originX + CELL_SIZE / 2
+    const centerY = originY + top + TRIANGLE_RADIUS
+
+    return {
+        center: { x: centerX, y: centerY },
+        apex: { x: centerX, y: centerY - TRIANGLE_RADIUS },
+        bottomLeft: { x: centerX - halfWidth, y: centerY + TRIANGLE_RADIUS / 2 },
+        bottomRight: { x: centerX + halfWidth, y: centerY + TRIANGLE_RADIUS / 2 },
+    }
+}
+
+function createD20Atlas(numbers, color, bg) {
+    const canvas = document.createElement('canvas')
+    canvas.width = ATLAS_COLS * CELL_SIZE
+    canvas.height = ATLAS_ROWS * CELL_SIZE
+    const ctx = canvas.getContext('2d')
+
+    ctx.fillStyle = bg
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.strokeStyle = color
+    ctx.fillStyle = color
+    ctx.lineWidth = 12
+    ctx.lineJoin = 'round'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+
+    numbers.forEach((value, i) => {
+        const { center, apex, bottomLeft, bottomRight } = getCellTriangle(i)
+
+        ctx.beginPath()
+        ctx.moveTo(apex.x, apex.y)
+        ctx.lineTo(bottomLeft.x, bottomLeft.y)
+        ctx.lineTo(bottomRight.x, bottomRight.y)
+        ctx.closePath()
+        ctx.stroke()
+
+        ctx.font = `bold ${value >= 10 ? 76 : 96}px monospace`
+        ctx.fillText(String(value), center.x, center.y - 4)
+
+        // 6 und 9 unterstreichen, damit man sie nicht verwechselt
+        if (value === 6 || value === 9) {
+            ctx.fillRect(center.x - 20, center.y + 38, 40, 6)
+        }
+    })
+
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.colorSpace = THREE.SRGBColorSpace
+    texture.anisotropy = 4
+    return texture
+}
+
+function buildD20() {
+    const geometry = new THREE.IcosahedronGeometry(D20_RADIUS, 0)
+    const position = geometry.getAttribute('position')
+    const faceCount = position.count / 3
+
+    const faces = Array.from({ length: faceCount }, (_, i) => {
+        const a = new THREE.Vector3().fromBufferAttribute(position, i * 3)
+        const b = new THREE.Vector3().fromBufferAttribute(position, i * 3 + 1)
+        const c = new THREE.Vector3().fromBufferAttribute(position, i * 3 + 2)
+        const center = new THREE.Vector3().add(a).add(b).add(c).divideScalar(3)
+        const normal = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a)).normalize()
+        return { a, center, normal }
+    })
+
+    // Gegenüberliegende Flächen ergeben zusammen 21, wie bei einem echten D20
+    const numbers = new Array(faceCount).fill(0)
+    let nextNumber = 1
+    faces.forEach((face, i) => {
+        if (numbers[i]) return
+        const opposite = faces.findIndex(other => other.normal.dot(face.normal) < -0.99)
+        numbers[i] = nextNumber
+        numbers[opposite] = faceCount + 1 - nextNumber
+        nextNumber++
+    })
+
+    // Jede Dreiecksfläche zeigt auf ihre Atlas-Zelle: Eckpunkt 0 = Spitze, 1 = links unten, 2 = rechts unten
+    const uv = new Float32Array(faceCount * 6)
+    for (let i = 0; i < faceCount; i++) {
+        const { apex, bottomLeft, bottomRight } = getCellTriangle(i)
+        const corners = [apex, bottomLeft, bottomRight]
+        corners.forEach((point, k) => {
+            uv[i * 6 + k * 2] = point.x / (ATLAS_COLS * CELL_SIZE)
+            uv[i * 6 + k * 2 + 1] = 1 - point.y / (ATLAS_ROWS * CELL_SIZE)
+        })
+    }
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+
+    // Zielausrichtung pro Zahl: Fläche zeigt zur Kamera, Zahl steht aufrecht
+    const targets = {}
+    faces.forEach((face, i) => {
+        const up = new THREE.Vector3().subVectors(face.a, face.center).normalize()
+        const right = new THREE.Vector3().crossVectors(up, face.normal)
+        const faceBasis = new THREE.Matrix4().makeBasis(right, up, face.normal)
+        const faceToCamera = new THREE.Quaternion().setFromRotationMatrix(faceBasis).invert()
+        targets[numbers[i]] = D20_TILT.clone().multiply(faceToCamera)
+    })
+
+    return { geometry, numbers, targets }
+}
+
+const D20 = buildD20()
+
+// ---------- Gemeinsame Wurf-Animation ----------
+
+function RollingDie({ rolling, result, targets, children }) {
     const meshRef = useRef(null)
     const rollingRef = useRef(rolling)
     const resultRef = useRef(result)
     const spinAxis = useRef(new THREE.Vector3(1, 1, 0).normalize())
     const rollTime = useRef(0)
-
-    const textures = useMemo(
-        () => D6_FACE_VALUES.map(value => createFaceTexture(value, color, bg)),
-        [color, bg]
-    )
-
-    useEffect(() => {
-        return () => textures.forEach(texture => texture.dispose())
-    }, [textures])
 
     useEffect(() => {
         rollingRef.current = rolling
@@ -100,15 +217,28 @@ function D6Mesh({ rolling, result, color, bg }) {
             mesh.rotateOnWorldAxis(spinAxis.current, delta * ROLL_SPIN_SPEED)
             mesh.position.y = Math.abs(Math.sin(rollTime.current * 9)) * 0.35
         } else {
-            const target = D6_TARGETS[resultRef.current] || D6_TARGETS[1]
+            const target = targets[resultRef.current] || Object.values(targets)[0]
             const blend = 1 - Math.exp(-delta * SETTLE_SPEED)
             mesh.quaternion.slerp(target, blend)
             mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, 0, blend)
         }
     })
 
+    return <mesh ref={meshRef}>{children}</mesh>
+}
+
+function D6Mesh({ rolling, result, color, bg }) {
+    const textures = useMemo(
+        () => D6_FACE_VALUES.map(value => createD6FaceTexture(value, color, bg)),
+        [color, bg]
+    )
+
+    useEffect(() => {
+        return () => textures.forEach(texture => texture.dispose())
+    }, [textures])
+
     return (
-        <mesh ref={meshRef}>
+        <RollingDie rolling={rolling} result={result} targets={D6_TARGETS}>
             <boxGeometry args={[1.6, 1.6, 1.6]} />
             {textures.map((texture, i) => (
                 <meshStandardMaterial
@@ -121,95 +251,47 @@ function D6Mesh({ rolling, result, color, bg }) {
                     roughness={0.5}
                 />
             ))}
-        </mesh>
+        </RollingDie>
     )
 }
 
-function D6Dice({ rolling, result, color, bg }) {
-    return (
-        <div className="flex flex-col items-center gap-2">
-            <Canvas
-                camera={{ position: [0, 0, 4.5], fov: 35 }}
-                style={{ width: 120, height: 120 }}
-            >
-                <ambientLight intensity={0.6} />
-                <directionalLight position={[3, 4, 5]} intensity={1.5} />
-                <D6Mesh rolling={rolling} result={result} color={color} bg={bg} />
-            </Canvas>
-            <DiceLabel rolling={rolling} diceType={6} value={result} />
-        </div>
-    )
-}
-
-// --- Flache Darstellung (aktuell noch für den D20) ---
-
-function DiceFace({ value, color, bg }) {
-    const dots = diceDots[value] || []
-    return (
-        <svg width="80" height="80" viewBox="0 0 100 100">
-            <rect width="100" height="100" rx="15" fill={bg} stroke={color} strokeWidth="3" />
-            {dots.map((pos, i) => (
-                <circle key={i} cx={pos[0]} cy={pos[1]} r="8" fill={color} />
-            ))}
-        </svg>
-    )
-}
-
-function FlatDice({ rolling, result, diceType, color, bg }) {
-    const [displayValue, setDisplayValue] = useState(result || 1)
-    const [spinning, setSpinning] = useState(false)
+function D20Mesh({ rolling, result, color, bg }) {
+    const atlas = useMemo(() => createD20Atlas(D20.numbers, color, bg), [color, bg])
 
     useEffect(() => {
-        if (rolling) {
-            setSpinning(true)
-            let ticks = 0
-            const interval = setInterval(() => {
-                setDisplayValue(Math.floor(Math.random() * (diceType || 6)) + 1)
-                ticks++
-                if (ticks >= 15) {
-                    clearInterval(interval)
-                    setDisplayValue(result)
-                    setSpinning(false)
-                }
-            }, 60)
-            return () => clearInterval(interval)
-        } else {
-            setDisplayValue(result || 1)
-        }
-    }, [rolling, result])
+        return () => atlas.dispose()
+    }, [atlas])
 
     return (
-        <div className="flex flex-col items-center gap-2">
-            <div style={{
-                transform: spinning ? 'rotateY(360deg)' : 'rotateY(0deg)',
-                transition: spinning ? 'transform 0.6s ease-in-out' : 'none',
-                filter: spinning ? `drop-shadow(0 0 12px ${color})` : `drop-shadow(0 0 4px ${color}44)`,
-            }}>
-                <svg width="80" height="80" viewBox="0 0 100 100">
-                    <polygon points="50,5 95,35 85,85 15,85 5,35"
-                        fill={bg} stroke={color} strokeWidth="3" />
-                    <text x="50" y="62" textAnchor="middle" fontSize="28"
-                        fontWeight="900" fontFamily="monospace" fill={color}>
-                        {displayValue}
-                    </text>
-                </svg>
-            </div>
-            <DiceLabel rolling={spinning} diceType={diceType} value={displayValue} />
-        </div>
-    )
-}
-
-function DiceLabel({ rolling, diceType, value }) {
-    return (
-        <div className="text-xs tracking-widest" style={{ color: '#555' }}>
-            {rolling ? 'WÜRFELT...' : `D${diceType || 6} — ${value}`}
-        </div>
+        <RollingDie rolling={rolling} result={result} targets={D20.targets}>
+            <primitive object={D20.geometry} attach="geometry" dispose={null} />
+            <meshStandardMaterial
+                map={atlas}
+                emissiveMap={atlas}
+                emissive="#ffffff"
+                emissiveIntensity={0.5}
+                roughness={0.5}
+            />
+        </RollingDie>
     )
 }
 
 export function Dice3D({ rolling, result, diceType, color, bg }) {
-    if (diceType === 6) {
-        return <D6Dice rolling={rolling} result={result} color={color} bg={bg} />
-    }
-    return <FlatDice rolling={rolling} result={result} diceType={diceType} color={color} bg={bg} />
+    return (
+        <div className="flex flex-col items-center gap-2">
+            <Canvas
+                camera={{ position: [0, 0, 4.5], fov: 35 }}
+                style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}
+            >
+                <ambientLight intensity={0.6} />
+                <directionalLight position={[3, 4, 5]} intensity={1.5} />
+                {diceType === 20
+                    ? <D20Mesh rolling={rolling} result={result} color={color} bg={bg} />
+                    : <D6Mesh rolling={rolling} result={result} color={color} bg={bg} />}
+            </Canvas>
+            <div className="text-xs tracking-widest" style={{ color: '#555' }}>
+                {rolling ? 'WÜRFELT...' : `D${diceType || 6} — ${result}`}
+            </div>
+        </div>
+    )
 }

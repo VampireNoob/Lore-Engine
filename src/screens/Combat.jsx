@@ -3,6 +3,8 @@ import { Dice3D } from '../components/Dice3D'
 import { useState, useEffect } from 'react'
 import { getSettingById } from '../settings'
 
+const DICE_RESULT_PAUSE_MS = 1100
+
 export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
     const setting = getSettingById(gameState.setting)
     const activePlayer = gameState.players[gameState.activePlayerIndex]
@@ -105,7 +107,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
 
             setTimeout(() => enemyTurn(newEnemyHp), 800)
             })
-        }, 400)
+        }, DICE_RESULT_PAUSE_MS)
         })
     }
 
@@ -186,7 +188,7 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
                         setDodging(false)
                         setPhase('player')
                     })
-                }, 400)
+                }, DICE_RESULT_PAUSE_MS)
             })
         }, 400)
     }
