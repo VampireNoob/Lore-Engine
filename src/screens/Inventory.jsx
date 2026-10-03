@@ -25,7 +25,7 @@ function isAmmoItem(name) {
     return lower.includes('kugel') || lower.includes('munition') || lower.includes('patrone')
 }
 
-const healKeywords = ['essen', 'fleisch', 'brot', 'dose', 'wasser', 'trank', 'med', 'verband']
+const healKeywords = ['essen', 'fleisch', 'brot', 'dose', 'wasser', 'trank', 'med', 'verband', 'stim', 'heil', 'hilfe', 'spritze', 'pille', 'tablette']
 const shieldKeywords = ['rüstung', 'schild', 'panzer', 'schutz']
 
 function isHealItemName(name) {

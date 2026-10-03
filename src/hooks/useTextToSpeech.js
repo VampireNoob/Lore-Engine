@@ -16,7 +16,8 @@ export function useTextToSpeech() {
     const voicePreferenceOrder = ['stefan', 'google deutsch', 'katja', 'hedda']
 
     const pickGermanVoice = () => {
-        const germanVoices = voicesRef.current.filter(v => v.lang.startsWith('de'))
+        const voices = voicesRef.current.length > 0 ? voicesRef.current : window.speechSynthesis.getVoices()
+        const germanVoices = voices.filter(v => v.lang.startsWith('de'))
         for (const preferred of voicePreferenceOrder) {
             const match = germanVoices.find(v => v.name.toLowerCase().includes(preferred))
             if (match) return match
