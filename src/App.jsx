@@ -28,14 +28,14 @@ function App() {
   const lastSpokenTextRef = useRef('')
   const [toastQueue, setToastQueue] = useState([])
 
-useEffect(() => {
-  const newlyUnlocked = checkAchievements(gameState)
-  if (newlyUnlocked.length > 0) {
-    setToastQueue(prev => [...prev, ...newlyUnlocked])
-  }
-}, [gameState])
+  useEffect(() => {
+    const newlyUnlocked = checkAchievements(gameState)
+    if (newlyUnlocked.length > 0) {
+      setToastQueue(prev => [...prev, ...newlyUnlocked])
+    }
+  }, [gameState])
 
-useEffect(() => {
+  useEffect(() => {
     if (!ttsEnabled || gameState.screen !== 'story') return
     const text = gameState.storyText
     if (!text || text === lastSpokenTextRef.current) return
@@ -43,25 +43,25 @@ useEffect(() => {
 
     duck(true)
     speak(text, { onEnd: () => duck(false) })
-}, [gameState.storyText, gameState.screen, ttsEnabled])
+  }, [gameState.storyText, gameState.screen, ttsEnabled])
 
-useEffect(() => {
+  useEffect(() => {
     if (gameState.screen !== 'story') {
+      stopSpeaking()
+      duck(false)
+    }
+  }, [gameState.screen])
+
+  const toggleTts = () => {
+    setTtsEnabled(prev => {
+      const next = !prev
+      if (!next) {
         stopSpeaking()
         duck(false)
-    }
-}, [gameState.screen])
-
-const toggleTts = () => {
-    setTtsEnabled(prev => {
-        const next = !prev
-        if (!next) {
-            stopSpeaking()
-            duck(false)
-        }
-        return next
+      }
+      return next
     })
-}
+  }
 
   const dismissToast = () => {
     setToastQueue(prev => prev.slice(1))
@@ -276,7 +276,6 @@ const toggleTts = () => {
       {gameState.screen === 'combat' && (
         <Combat
           gameState={gameState}
-          onUpdateState={updateState}
           onVictory={handleVictory}
           onDefeat={handleDefeat}
         />
@@ -297,8 +296,8 @@ const toggleTts = () => {
       )}
       {gameState.screen === 'gameOver' && (
         <GameOver
-            gameState={gameState}
-            onNewGame={handleResetGame}
+          gameState={gameState}
+          onNewGame={handleResetGame}
         />
       )}
     </div>

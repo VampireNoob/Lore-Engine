@@ -1,11 +1,11 @@
 import { rollWithAdvantage, rollNormal, hasAdvantage } from '../hooks/useCombat'
 import { Dice3D } from '../components/Dice3D'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { getSettingById } from '../settings'
 
 const DICE_RESULT_PAUSE_MS = 1100
 
-export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
+export function Combat({ gameState, onVictory, onDefeat }) {
     const setting = getSettingById(gameState.setting)
     const activePlayer = gameState.players[gameState.activePlayerIndex]
     const { character } = activePlayer
@@ -26,8 +26,6 @@ export function Combat({ gameState, onUpdateState, onVictory, onDefeat }) {
     const [diceType, setDiceType] = useState(null)
     const [phase, setPhase] = useState('player') // player | enemy | end
     const [dodging, setDodging] = useState(false)
-
-    const rollDie = (sides) => Math.floor(Math.random() * sides) + 1
 
     const addLog = (text, type = 'normal') => {
         setLog(prev => [{ text, type }, ...prev].slice(0, 8))
