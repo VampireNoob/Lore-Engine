@@ -6,6 +6,7 @@ import { useTextToSpeech } from './hooks/useTextToSpeech'
 import { calculateXpReward, getLevel, getLevelUpBonus } from './hooks/useLevelUp'
 import { SettingSelect } from './components/SettingSelect'
 import { AchievementToast } from './components/AchievementToast'
+import { ParticleBackground } from './components/ParticleBackground'
 import { PlayerCountSelect } from './screens/PlayerCountSelect'
 import { CharCreate } from './screens/CharCreate'
 import { Story } from './screens/Story'
@@ -13,11 +14,14 @@ import { Combat } from './screens/Combat'
 import { GameOver } from './screens/GameOver'
 import { Inventory } from './screens/Inventory'
 import { Statistics } from './screens/Statistics'
+import { getSettingById } from './settings'
 
 const shieldByClass = {
   bunker: 4, raider: 2, medic: 1, warrior: 3, mage: 1, rogue: 1,
   ranger: 2, soldier: 3, netrunner: 1, streetsamurai: 4, pilot: 1,
 }
+
+const SCREENS_WITH_PARTICLES = ['playerCount', 'charCreate', 'story', 'combat', 'inventory', 'statistics']
 
 function App() {
   const { gameState, updateState, resetGameState } = useGameState()
@@ -26,6 +30,7 @@ function App() {
   const { speak, stop: stopSpeaking } = useTextToSpeech()
   const [ttsEnabled, setTtsEnabled] = useState(true)
   const lastSpokenTextRef = useRef('')
+  const activeSetting = getSettingById(gameState.setting)
   const [toastQueue, setToastQueue] = useState([])
 
   useEffect(() => {
@@ -212,6 +217,9 @@ function App() {
 
   return (
     <div>
+      {activeSetting && SCREENS_WITH_PARTICLES.includes(gameState.screen) && (
+        <ParticleBackground settingId={activeSetting.id} colors={activeSetting.colors} />
+      )}
       <div className="fixed bottom-4 left-4 z-40 flex flex-col gap-2">
         <div className="flex items-center gap-2 border px-3 py-2"
           style={{ background: '#111', borderColor: musicEnabled ? '#39ff14' : '#333' }}>

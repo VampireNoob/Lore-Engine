@@ -5,7 +5,7 @@ export function PlayerCountSelect({ settingId, onSelect, onBack }) {
     const options = [1, 2, 3, 4]
 
     return (
-        <div className="min-h-screen p-8 flex items-center justify-center" style={{ background: setting.colors.bg }}>
+        <div className="min-h-screen p-8 flex items-center justify-center">
             <div className="max-w-md w-full">
                 <button onClick={onBack} className="text-xs tracking-widest mb-4 block"
                     style={{ color: setting.colors.primary }}>

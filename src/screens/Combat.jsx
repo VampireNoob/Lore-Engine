@@ -195,7 +195,7 @@ export function Combat({ gameState, onVictory, onDefeat }) {
     const eHpPct = Math.round((enemyHp / enemyMaxHp) * 100)
 
     return (
-        <div className="min-h-screen p-6" style={{ background: setting.colors.bg }}>
+        <div className="min-h-screen p-6">
             <div className="max-w-xl mx-auto">
 
                 {/* Title */}

@@ -130,7 +130,7 @@ export function Inventory({ gameState, onUpdateState, onBack }) {
     }
 
     return (
-        <div className="min-h-screen p-8" style={{ background: setting.colors.bg }}>
+        <div className="min-h-screen p-8">
             <div className="max-w-2xl mx-auto">
 
                 {/* Header */}
