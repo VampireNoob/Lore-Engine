@@ -2,6 +2,7 @@ export const fantasy = {
     id: 'fantasy',
     label: 'Fantasy',
     emoji: '⚔️',
+    backgroundImage: '/images/fantasy.jpg',
     colors: {
         primary: '#f0c040',
         secondary: '#a855f7',

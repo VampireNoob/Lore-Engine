@@ -22,6 +22,7 @@ const shieldByClass = {
 }
 
 const SCREENS_WITH_PARTICLES = ['playerCount', 'charCreate', 'story', 'combat', 'inventory', 'statistics']
+const CONTROL_ACCENT = '#5fae4e'
 
 function App() {
   const { gameState, updateState, resetGameState } = useGameState()
@@ -218,14 +219,14 @@ function App() {
   return (
     <div>
       {activeSetting && SCREENS_WITH_PARTICLES.includes(gameState.screen) && (
-        <ParticleBackground settingId={activeSetting.id} colors={activeSetting.colors} />
+        <ParticleBackground setting={activeSetting} />
       )}
       <div className="fixed bottom-4 left-4 z-40 flex flex-col gap-2">
         <div className="flex items-center gap-2 border px-3 py-2"
-          style={{ background: '#111', borderColor: musicEnabled ? '#39ff14' : '#333' }}>
+          style={{ background: '#111', borderColor: musicEnabled ? CONTROL_ACCENT : '#333' }}>
           <button onClick={toggleMusic}
             className="text-xs tracking-widest cursor-pointer"
-            style={{ color: musicEnabled ? '#39ff14' : '#666' }}>
+            style={{ color: musicEnabled ? CONTROL_ACCENT : '#666' }}>
             {musicEnabled ? '🔊 MUSIK AN' : '🔈 MUSIK AUS'}
           </button>
           {musicEnabled && (
@@ -242,7 +243,7 @@ function App() {
         </div>
         <button onClick={toggleTts}
           className="text-xs tracking-widest cursor-pointer border px-3 py-2"
-          style={{ background: '#111', borderColor: ttsEnabled ? '#39ff14' : '#333', color: ttsEnabled ? '#39ff14' : '#666' }}>
+          style={{ background: '#111', borderColor: ttsEnabled ? CONTROL_ACCENT : '#333', color: ttsEnabled ? CONTROL_ACCENT : '#666' }}>
           {ttsEnabled ? '🗣️ VORLESEN AN' : '🔇 VORLESEN AUS'}
         </button>
       </div>

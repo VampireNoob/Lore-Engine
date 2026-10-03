@@ -107,15 +107,28 @@ function Particles({ preset, color }) {
     )
 }
 
-export function ParticleBackground({ settingId, colors }) {
-    const preset = PARTICLE_PRESETS[settingId]
+export function ParticleBackground({ setting }) {
+    const preset = PARTICLE_PRESETS[setting.id]
     if (!preset) return null
 
     return (
-        <div className="pointer-events-none fixed inset-0 -z-10">
+        <div
+            className="pointer-events-none fixed inset-0 -z-10"
+            style={{
+                backgroundColor: setting.colors.bg,
+                backgroundImage: setting.backgroundImage
+                    ? `linear-gradient(rgba(10, 10, 10, 0.55), rgba(10, 10, 10, 0.8)), url('${setting.backgroundImage}')`
+                    : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center top',
+            }}
+        >
             <Canvas camera={{ position: [0, 0, 6], fov: 60 }} dpr={[1, 1.5]}>
-                <color attach="background" args={[colors.bg]} />
-                <Particles key={settingId} preset={preset} color={preset.color ?? colors[preset.colorKey]} />
+                <Particles
+                    key={setting.id}
+                    preset={preset}
+                    color={preset.color ?? setting.colors[preset.colorKey]}
+                />
             </Canvas>
         </div>
     )

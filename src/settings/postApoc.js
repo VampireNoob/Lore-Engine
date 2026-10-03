@@ -2,6 +2,7 @@ export const postApoc = {
     id: 'postApoc',
     label: 'Post-Apokalyptisch',
     emoji: '☢️',
+    backgroundImage: '/images/postApoc.jpg',
     colors: {
         primary: '#39ff14',
         secondary: '#f5a623',
