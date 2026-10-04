@@ -2,6 +2,7 @@ export const scifi = {
     id: 'scifi',
     label: 'Sci-Fi',
     emoji: '🚀',
+    backgroundImage: '/images/scifi.jpg',
     colors: {
         primary: '#00d4ff',
         secondary: '#0066ff',

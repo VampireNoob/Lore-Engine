@@ -2,6 +2,7 @@ export const cyberpunk = {
     id: 'cyberpunk',
     label: 'Cyberpunk',
     emoji: '🤖',
+    backgroundImage: '/images/cyberpunk.jpg',
     colors: {
         primary: '#ff2d78',
         secondary: '#bf00ff',
