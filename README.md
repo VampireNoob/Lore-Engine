@@ -50,8 +50,6 @@ An AI-powered RPG with dynamic storytelling across 4 unique settings, powered by
 ```
 ├── public/
 ├── src/
-│   ├── assets/
-│   │   └── icons/
 │   ├── components/
 │   │   ├── AchievementToast.jsx
 │   │   ├── Dice3D.jsx
