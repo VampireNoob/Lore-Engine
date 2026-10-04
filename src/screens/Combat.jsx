@@ -1,5 +1,6 @@
 import { rollWithAdvantage, rollNormal, hasAdvantage } from '../hooks/useCombat'
 import { Dice3D } from '../components/Dice3D'
+import { ClassPortrait } from '../components/ClassPortrait'
 import { useState } from 'react'
 import { getSettingById } from '../settings'
 
@@ -211,26 +212,36 @@ export function Combat({ gameState, onVictory, onDefeat }) {
                 {/* HP Bars */}
                 <div className="grid grid-cols-2 gap-4 mb-6">
                 {/* Player */}
-                <div className="border p-4" style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
-                    <div className="text-xs tracking-widest mb-1" style={{ color: setting.colors.primary }}>
-                        {character.name.toUpperCase()}
-                    </div>
-                    <div className="flex items-baseline gap-2 mb-2 flex-wrap">
-                        <div className="text-3xl font-black text-white">{playerHp}<span className="text-sm text-gray-600">/{playerMaxHp}</span></div>
-                        {playerShield > 0 && (
-                            <div className="text-sm font-bold" style={{ color: setting.colors.secondary }}>
-                                🛡️ {playerShield}
-                            </div>
-                        )}
-                        {rangedBonus > 0 && (
-                            <div className="text-sm font-bold" style={{ color: playerAmmo > 0 ? setting.colors.primary : setting.colors.danger }}>
-                                🔫 {playerAmmo}
-                            </div>
-                        )}
-                    </div>
-                    <div className="h-1.5 rounded-full" style={{ background: '#1a1a1a' }}>
-                        <div className="h-1.5 rounded-full transition-all duration-500"
-                            style={{ width: `${pHpPct}%`, background: pHpPct > 30 ? setting.colors.primary : setting.colors.danger }} />
+                <div className="border p-4 flex gap-3" style={{ background: setting.colors.surface, borderColor: setting.colors.border }}>
+                    <ClassPortrait
+                        classId={character.class.id}
+                        width={56}
+                        crop
+                        active
+                        dead={playerHp <= 0}
+                        glowColor={setting.colors.primary}
+                    />
+                    <div className="flex-1 min-w-0">
+                        <div className="text-xs tracking-widest mb-1" style={{ color: setting.colors.primary }}>
+                            {character.name.toUpperCase()}
+                        </div>
+                        <div className="flex items-baseline gap-2 mb-2 flex-wrap">
+                            <div className="text-3xl font-black text-white">{playerHp}<span className="text-sm text-gray-600">/{playerMaxHp}</span></div>
+                            {playerShield > 0 && (
+                                <div className="text-sm font-bold" style={{ color: setting.colors.secondary }}>
+                                    🛡️ {playerShield}
+                                </div>
+                            )}
+                            {rangedBonus > 0 && (
+                                <div className="text-sm font-bold" style={{ color: playerAmmo > 0 ? setting.colors.primary : setting.colors.danger }}>
+                                    🔫 {playerAmmo}
+                                </div>
+                            )}
+                        </div>
+                        <div className="h-1.5 rounded-full" style={{ background: '#1a1a1a' }}>
+                            <div className="h-1.5 rounded-full transition-all duration-500"
+                                style={{ width: `${pHpPct}%`, background: pHpPct > 30 ? setting.colors.primary : setting.colors.danger }} />
+                        </div>
                     </div>
                 </div>
 

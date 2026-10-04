@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getSettingById } from '../settings'
+import { ClassPortrait } from '../components/ClassPortrait'
 
 const initialAttrs = { str: 2, agi: 2, int: 2, end: 2, lck: 2, cha: 2 }
 const ATTR_LABELS = { str: 'Stärke', agi: 'Agilität', int: 'Intelligenz', end: 'Ausdauer', lck: 'Glück', cha: 'Charisma' }
@@ -79,21 +80,27 @@ export function CharCreate({ settingId, onStart, onBack, playerNumber, totalPlay
                 <label className="block text-xs tracking-[0.2em] mb-2" style={{ color: setting.colors.primary }}>
                     // KLASSE WÄHLEN
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                    {setting.classes.map(cls => (
-                    <button key={cls.id} onClick={() => setSelectedClass(cls)}
-                        className="p-4 border text-left transition-all duration-200"
-                        style={{
-                        background: selectedClass?.id === cls.id ? `${setting.colors.primary}15` : setting.colors.surface,
-                        borderColor: selectedClass?.id === cls.id ? setting.colors.primary : setting.colors.border,
-                        }}>
-                        <div className="font-bold tracking-widest text-white text-sm uppercase mb-1">
-                        {cls.label}
-                        </div>
-                        <div className="text-xs" style={{ color: '#666' }}>{cls.desc}</div>
-                    </button>
-                    ))}
-                </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        {setting.classes.map(cls => {
+                            const isSelected = selectedClass?.id === cls.id
+                            return (
+                                <button key={cls.id} onClick={() => setSelectedClass(cls)}
+                                    className="p-4 border text-left transition-all duration-200 flex items-center gap-4"
+                                    style={{
+                                        background: isSelected ? `${setting.colors.primary}15` : setting.colors.surface,
+                                        borderColor: isSelected ? setting.colors.primary : setting.colors.border,
+                                    }}>
+                                    <ClassPortrait classId={cls.id} width={84} glowColor={setting.colors.primary} active={isSelected} />
+                                    <div className="min-w-0">
+                                        <div className="font-bold tracking-widest text-white text-sm uppercase mb-1">
+                                            {cls.label}
+                                        </div>
+                                        <div className="text-xs" style={{ color: '#666' }}>{cls.desc}</div>
+                                    </div>
+                                </button>
+                            )
+                        })}
+                    </div>
                 </div>
 
                 {/* Attribute */}
@@ -146,7 +153,6 @@ export function CharCreate({ settingId, onStart, onBack, playerNumber, totalPlay
                 onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
                 {totalPlayers > 1 && playerNumber < totalPlayers ? `Weiter zu Spieler ${playerNumber + 1} →` : 'Ins Abenteuer →'}
                 </button>
-
             </div>
         </div>
     )

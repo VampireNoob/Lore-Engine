@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getSettingById } from '../settings'
+import { ClassPortrait } from '../components/ClassPortrait'
 
 function safeJsonParse(raw) {
     const clean = raw.replace(/```json|```/g, '').trim()
@@ -252,48 +253,87 @@ SPRACHE: Schreibe ALLE Textwerte ausnahmslos auf Deutsch ("scene", "location", j
 
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <div className="text-xs tracking-[0.3em] mb-1" style={{ color: setting.colors.primary }}>
-                            {setting.emoji} {(gameState.location || 'Unbekannt').toUpperCase()}
-                        </div>
-                        <div className="text-lg font-black tracking-widest text-white uppercase">
-                            {activePlayer.character.name}
-                            <span className="text-xs font-normal ml-3 tracking-widest" style={{ color: '#555' }}>
-                                {activePlayer.character.class.label}
-                            </span>
-                            <span className="text-xs font-normal ml-3 tracking-widest" style={{ color: setting.colors.secondary }}>
-                                LVL {activePlayer.level || 1}
-                            </span>
-                        </div>
-                        {players.length > 1 && (
-                            <div className="text-xs tracking-widest mt-1" style={{ color: setting.colors.secondary }}>
-                                🎯 AM ZUG: {activePlayer.character.name} ({activeIndex + 1}/{players.length})
+                    <div className="flex items-center gap-4">
+                        <ClassPortrait
+                            classId={activePlayer.character.class.id}
+                            width={64}
+                            crop
+                            active
+                            glowColor={setting.colors.primary}
+                        />
+                        <div>
+                            <div className="text-xs tracking-[0.3em] mb-1" style={{ color: setting.colors.primary }}>
+                                {setting.emoji} {(gameState.location || 'Unbekannt').toUpperCase()}
                             </div>
-                        )}
-                    </div>
-                        <div className="flex gap-4">
-                            <button onClick={onOpenInventory}
-                                className="text-xs tracking-widest cursor-pointer"
-                                style={{ color: setting.colors.primary }}>
-                                🎒 INVENTAR
-                            </button>
-                            <button onClick={onOpenStatistics}
-                                className="text-xs tracking-widest cursor-pointer"
-                                style={{ color: setting.colors.secondary }}>
-                                📊 STATISTIKEN
-                            </button>
-                            <button onClick={onResetGame}
-                                className="text-xs tracking-widest cursor-pointer"
-                                style={{ color: setting.colors.danger }}>
-                                🔄 NEUES SPIEL
-                            </button>
-                            <button onClick={onBack}
-                                className="text-xs tracking-widest"
-                                style={{ color: '#444' }}>
-                                MENÜ
-                            </button>
+                            <div className="text-lg font-black tracking-widest text-white uppercase">
+                                {activePlayer.character.name}
+                                <span className="text-xs font-normal ml-3 tracking-widest" style={{ color: '#555' }}>
+                                    {activePlayer.character.class.label}
+                                </span>
+                                <span className="text-xs font-normal ml-3 tracking-widest" style={{ color: setting.colors.secondary }}>
+                                    LVL {activePlayer.level || 1}
+                                </span>
+                            </div>
+                            {players.length > 1 && (
+                                <div className="text-xs tracking-widest mt-1" style={{ color: setting.colors.secondary }}>
+                                    🎯 AM ZUG: {activePlayer.character.name} ({activeIndex + 1}/{players.length})
+                                </div>
+                            )}
                         </div>
+                    </div>
+                    <div className="flex gap-4">
+                        <button onClick={onOpenInventory}
+                            className="text-xs tracking-widest cursor-pointer"
+                            style={{ color: setting.colors.primary }}>
+                            🎒 INVENTAR
+                        </button>
+                        <button onClick={onOpenStatistics}
+                            className="text-xs tracking-widest cursor-pointer"
+                            style={{ color: setting.colors.secondary }}>
+                            📊 STATISTIKEN
+                        </button>
+                        <button onClick={onResetGame}
+                            className="text-xs tracking-widest cursor-pointer"
+                            style={{ color: setting.colors.danger }}>
+                            🔄 NEUES SPIEL
+                        </button>
+                        <button onClick={onBack}
+                            className="text-xs tracking-widest"
+                            style={{ color: '#444' }}>
+                            MENÜ
+                        </button>
+                    </div>
                 </div>
+
+                {/* Gruppe */}
+                {players.length > 1 && (
+                    <div className="flex gap-4 mb-4">
+                        {players.map((player, i) => {
+                            const isActive = i === activeIndex
+                            return (
+                                <div key={i} className="flex flex-col items-center gap-1" title={player.character.name}>
+                                    <div className="relative">
+                                        <ClassPortrait
+                                            classId={player.character.class.id}
+                                            width={44}
+                                            crop
+                                            active={isActive}
+                                            dead={player.isDead}
+                                            glowColor={setting.colors.primary}
+                                        />
+                                        {player.isDead && (
+                                            <span className="absolute inset-0 flex items-center justify-center text-lg">💀</span>
+                                        )}
+                                    </div>
+                                    <span className="max-w-16 truncate text-[10px] tracking-widest uppercase"
+                                        style={{ color: player.isDead ? '#444' : isActive ? setting.colors.primary : '#777' }}>
+                                        {player.character.name}
+                                    </span>
+                                </div>
+                            )
+                        })}
+                    </div>
+                )}
 
                 {/* Story Box */}
                 <div className="border p-6 mb-4 min-h-32"
