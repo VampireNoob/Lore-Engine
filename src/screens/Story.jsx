@@ -254,13 +254,15 @@ SPRACHE: Schreibe ALLE Textwerte ausnahmslos auf Deutsch ("scene", "location", j
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-4">
-                        <ClassPortrait
-                            classId={activePlayer.character.class.id}
-                            width={64}
-                            crop
-                            active
-                            glowColor={setting.colors.primary}
-                        />
+                        <div className="xl:hidden">
+                            <ClassPortrait
+                                classId={activePlayer.character.class.id}
+                                width={64}
+                                crop
+                                active
+                                glowColor={setting.colors.primary}
+                            />
+                        </div>
                         <div>
                             <div className="text-xs tracking-[0.3em] mb-1" style={{ color: setting.colors.primary }}>
                                 {setting.emoji} {(gameState.location || 'Unbekannt').toUpperCase()}

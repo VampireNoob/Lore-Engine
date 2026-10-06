@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 const PORTRAIT_EXTENSION = 'webp'
-const DEAD_FILTER = 'grayscale(1) brightness(0.45)'
+const DEAD_FILTER = 'grayscale(1) brightness(0.6)'
 const DIM_FILTER = 'brightness(0.55)'
 
 function getFilter({ dead, active, dim, glowColor }) {
