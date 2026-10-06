@@ -7,6 +7,7 @@ import { calculateXpReward, getLevel, getLevelUpBonus } from './hooks/useLevelUp
 import { SettingSelect } from './components/SettingSelect'
 import { AchievementToast } from './components/AchievementToast'
 import { ParticleBackground } from './components/ParticleBackground'
+import { SidePortraits } from './components/SidePortraits'
 import { PlayerCountSelect } from './screens/PlayerCountSelect'
 import { CharCreate } from './screens/CharCreate'
 import { Story } from './screens/Story'
@@ -22,6 +23,7 @@ const shieldByClass = {
 }
 
 const SCREENS_WITH_PARTICLES = ['playerCount', 'charCreate', 'story', 'combat', 'inventory', 'statistics']
+const SCREENS_WITH_PORTRAITS = ['story', 'combat', 'inventory', 'statistics']
 const CONTROL_ACCENT = '#5fae4e'
 
 function App() {
@@ -220,6 +222,13 @@ function App() {
     <div>
       {activeSetting && SCREENS_WITH_PARTICLES.includes(gameState.screen) && (
         <ParticleBackground setting={activeSetting} />
+      )}
+      {activeSetting && SCREENS_WITH_PORTRAITS.includes(gameState.screen) && gameState.players.length > 0 && (
+        <SidePortraits
+          players={gameState.players}
+          activeIndex={gameState.activePlayerIndex}
+          glowColor={activeSetting.colors.primary}
+        />
       )}
       <div className="fixed bottom-4 left-4 z-40 flex flex-col gap-2">
         <div className="flex items-center gap-2 border px-3 py-2"
